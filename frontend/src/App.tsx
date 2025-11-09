@@ -1,26 +1,37 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { Login } from '@/pages/Login'
+import { Register } from '@/pages/Register'
+import { ForgotPassword } from '@/pages/ForgotPassword'
+import { ResetPassword } from '@/pages/ResetPassword'
+import { AuthCallback } from '@/pages/AuthCallback'
+import { RegisterSuccess } from '@/pages/RegisterSuccess'
+import { Dashboard } from '@/pages/Dashboard'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route 
-          path="/" 
-          element={
-            <div className="min-h-screen flex items-center justify-center bg-background">
-              <div className="text-center">
-                <h1 className="text-4xl font-bold text-foreground mb-4">
-                  EaseQuote AI
-                </h1>
-                <p className="text-muted-foreground">
-                  Project setup complete! ✅
-                </p>
-              </div>
-            </div>
-          } 
-        />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/register/success" element={<RegisterSuccess />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
