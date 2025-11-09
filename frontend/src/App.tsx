@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { Toaster } from '@/components/ui/toaster'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { ForgotPassword } from '@/pages/ForgotPassword'
@@ -8,6 +9,7 @@ import { ResetPassword } from '@/pages/ResetPassword'
 import { AuthCallback } from '@/pages/AuthCallback'
 import { RegisterSuccess } from '@/pages/RegisterSuccess'
 import { Dashboard } from '@/pages/Dashboard'
+import { Settings } from '@/pages/Settings'
 
 function App() {
   return (
@@ -29,7 +31,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
+        <Toaster />
       </BrowserRouter>
     </AuthProvider>
   )

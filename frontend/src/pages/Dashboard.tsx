@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Settings } from 'lucide-react'
 
 export function Dashboard() {
   const { user, signOut } = useAuth()
@@ -11,6 +13,11 @@ export function Dashboard() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">EaseQuote AI</h1>
           <div className="flex items-center gap-4">
+            <Link to="/settings">
+              <Button variant="ghost" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" onClick={signOut}>
               Sign Out
