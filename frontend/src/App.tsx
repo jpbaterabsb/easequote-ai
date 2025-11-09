@@ -10,6 +10,7 @@ import { AuthCallback } from '@/pages/AuthCallback'
 import { RegisterSuccess } from '@/pages/RegisterSuccess'
 import { Dashboard } from '@/pages/Dashboard'
 import { Settings } from '@/pages/Settings'
+import { CreateQuote } from '@/pages/CreateQuote'
 
 function App() {
   return (
@@ -36,6 +37,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quotes/new"
+            element={
+              <ProtectedRoute>
+                <CreateQuote />
               </ProtectedRoute>
             }
           />

@@ -1,0 +1,327 @@
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Plus, X } from 'lucide-react'
+import { formatCurrency } from '@/utils/format'
+import type { QuoteItem, Addon } from '@/types/quote-creation'
+import { AddonSelector } from './AddonSelector'
+
+const lineItemSchema = z.object({
+  item_name: z.string().min(1, 'Item name is required'),
+  area: z.number().min(0.01, 'Area must be greater than 0'),
+  price_per_sqft: z.number().min(0, 'Price must be greater than or equal to 0'),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+})
+
+type LineItemFormData = z.infer<typeof lineItemSchema>
+
+interface LineItemFormProps {
+  item?: QuoteItem
+  onSave: (item: QuoteItem) => void
+  onCancel: () => void
+}
+
+export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
+  const [inputMode, setInputMode] = useState<'area' | 'dimensions'>('area')
+  const [length, setLength] = useState('')
+  const [width, setWidth] = useState('')
+  const [addons, setAddons] = useState<Addon[]>(item?.addons || [])
+  const [showAddonSelector, setShowAddonSelector] = useState(false)
+  const [addonSelectorKey, setAddonSelectorKey] = useState(0)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+  } = useForm<LineItemFormData>({
+    resolver: zodResolver(lineItemSchema),
+    defaultValues: {
+      item_name: item?.item_name || '',
+      area: item?.area || 0,
+      price_per_sqft: item?.price_per_sqft || 0,
+      start_date: item?.start_date || '',
+      end_date: item?.end_date || '',
+    },
+  })
+
+  const area = watch('area')
+  const pricePerSqft = watch('price_per_sqft')
+
+  useEffect(() => {
+    if (inputMode === 'dimensions' && length && width) {
+      const l = parseFloat(length)
+      const w = parseFloat(width)
+      if (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) {
+        const calculatedArea = l * w
+        setValue('area', calculatedArea, { shouldValidate: true })
+      }
+    }
+  }, [length, width, inputMode, setValue])
+
+  const addonTotal = addons.reduce((sum, addon) => sum + addon.price, 0)
+  const lineTotal = area * pricePerSqft + addonTotal
+
+  const onSubmit = (data: LineItemFormData) => {
+    const newItem: QuoteItem = {
+      id: item?.id || crypto.randomUUID(),
+      item_name: data.item_name,
+      area: data.area,
+      price_per_sqft: data.price_per_sqft,
+      line_total: lineTotal,
+      start_date: data.start_date,
+      end_date: data.end_date,
+      addons,
+    }
+    onSave(newItem)
+  }
+
+  const handleAddAddon = (addon: Addon) => {
+    setAddons([...addons, addon])
+    setShowAddonSelector(false)
+  }
+
+  const handleRemoveAddon = (addonId: string) => {
+    setAddons(addons.filter((a) => a.id !== addonId))
+  }
+
+  const handleOpenAddonSelector = () => {
+    setAddonSelectorKey((prev) => prev + 1)
+    setShowAddonSelector(true)
+  }
+
+  const handleCloseAddonSelector = () => {
+    setShowAddonSelector(false)
+  }
+
+  return (
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <Label htmlFor="item_name">
+            Item Name <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="item_name"
+            {...register('item_name')}
+            placeholder="e.g., Bathroom Floor"
+            className={errors.item_name ? 'border-destructive' : ''}
+          />
+          {errors.item_name && (
+            <p className="text-sm text-destructive mt-1">
+              {errors.item_name.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <Label>Area Input Method</Label>
+          <RadioGroup
+            value={inputMode}
+            onValueChange={(value) => {
+              setInputMode(value as 'area' | 'dimensions')
+              if (value === 'area') {
+                setLength('')
+                setWidth('')
+              }
+            }}
+            className="flex gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="area" id="area" />
+              <Label htmlFor="area">Square Feet</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="dimensions" id="dimensions" />
+              <Label htmlFor="dimensions">Dimensions (L × W)</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {inputMode === 'area' ? (
+          <div>
+            <Label htmlFor="area">
+              Area (sq ft) <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="area"
+              type="number"
+              step="0.01"
+              {...register('area', { valueAsNumber: true })}
+              className={errors.area ? 'border-destructive' : ''}
+            />
+            {errors.area && (
+              <p className="text-sm text-destructive mt-1">
+                {errors.area.message}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="length">Length (ft)</Label>
+              <Input
+                id="length"
+                type="number"
+                step="0.01"
+                value={length}
+                onChange={(e) => {
+                  setLength(e.target.value)
+                }}
+              />
+            </div>
+            <div>
+              <Label htmlFor="width">Width (ft)</Label>
+              <Input
+                id="width"
+                type="number"
+                step="0.01"
+                value={width}
+                onChange={(e) => {
+                  setWidth(e.target.value)
+                }}
+              />
+            </div>
+            {area > 0 && (
+              <div className="col-span-2 text-sm text-muted-foreground">
+                Calculated area: {area.toFixed(2)} sq ft
+              </div>
+            )}
+          </div>
+        )}
+
+        <div>
+          <Label htmlFor="price_per_sqft">
+            Price per Square Foot <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="price_per_sqft"
+            type="number"
+            step="0.01"
+            {...register('price_per_sqft', { valueAsNumber: true })}
+            className={errors.price_per_sqft ? 'border-destructive' : ''}
+          />
+          {errors.price_per_sqft && (
+            <p className="text-sm text-destructive mt-1">
+              {errors.price_per_sqft.message}
+            </p>
+          )}
+        </div>
+
+        <div className="p-4 bg-muted rounded-md">
+          <div className="flex justify-between mb-2">
+            <span>Line Total:</span>
+            <span className="font-bold">{formatCurrency(lineTotal)}</span>
+          </div>
+          {addonTotal > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Base: {formatCurrency(area * pricePerSqft)} + Add-ons:{' '}
+              {formatCurrency(addonTotal)}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleOpenAddonSelector}
+            className="w-full gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Add-ons
+          </Button>
+        </div>
+
+        {addons.length > 0 && (
+          <div className="space-y-2">
+            <Label>Current Add-ons</Label>
+            <div className="flex flex-wrap gap-2">
+              {addons.map((addon) => (
+                <div
+                  key={addon.id}
+                  className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-full"
+                >
+                  <span className="text-sm">
+                    {addon.name} - {formatCurrency(addon.price)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAddon(addon.id)}
+                    className="hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="start_date">Start Date</Label>
+            <Input
+              id="start_date"
+              type="date"
+              {...register('start_date')}
+            />
+          </div>
+          <div>
+            <Label htmlFor="end_date">End Date</Label>
+            <Input
+              id="end_date"
+              type="date"
+              {...register('end_date')}
+              min={watch('start_date') || undefined}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+            Cancel
+          </Button>
+          <Button type="submit" className="flex-1">
+            {item ? 'Update Item' : 'Add Item'}
+          </Button>
+        </div>
+      </form>
+
+      <Dialog open={showAddonSelector} onOpenChange={(open) => {
+        if (!open) {
+          handleCloseAddonSelector()
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Select Add-on</DialogTitle>
+            <DialogDescription>
+              Choose an add-on from the list or create a custom one.
+            </DialogDescription>
+          </DialogHeader>
+          <AddonSelector
+            key={addonSelectorKey}
+            onSelect={handleAddAddon}
+            onCancel={handleCloseAddonSelector}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
