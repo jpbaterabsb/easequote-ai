@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { formatCurrency, formatDate } from '@/utils/format'
-import { ArrowLeft, Edit, Trash2, Loader2, FileDown, Mail } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Loader2, FileDown, Mail, MessageCircle } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import {
   Dialog,
@@ -20,6 +20,7 @@ import {
 import { StatusChangeDialog } from '@/components/quote/StatusChangeDialog'
 import { LanguageSelectorModal, Language } from '@/components/quote/LanguageSelectorModal'
 import { SendEmailModal } from '@/components/quote/SendEmailModal'
+import { SendWhatsAppModal } from '@/components/quote/SendWhatsAppModal'
 import { logAuditEvent } from '@/utils/audit'
 
 interface QuoteItemWithId extends QuoteItem {
@@ -37,6 +38,7 @@ export function ViewQuote() {
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [generatingPdf, setGeneratingPdf] = useState(false)
 
@@ -250,6 +252,14 @@ export function ViewQuote() {
             <Button
               variant="outline"
               className="gap-2"
+              onClick={() => setShowWhatsAppModal(true)}
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
               onClick={() => setShowStatusDialog(true)}
             >
               Change Status
@@ -432,6 +442,22 @@ export function ViewQuote() {
           toast({
             title: 'Success',
             description: 'Email sent successfully!',
+          })
+        }}
+      />
+
+      <SendWhatsAppModal
+        open={showWhatsAppModal}
+        onOpenChange={setShowWhatsAppModal}
+        quoteId={quote.id}
+        quoteNumber={quote.quote_number}
+        customerName={quote.customer_name}
+        customerPhone={quote.customer_phone}
+        totalAmount={quote.total_amount}
+        onWhatsAppOpened={() => {
+          toast({
+            title: 'Success',
+            description: 'WhatsApp opened! Complete sending the message.',
           })
         }}
       />
