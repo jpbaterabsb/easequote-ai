@@ -246,7 +246,12 @@ export function SendWhatsAppModal({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={generating}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              disabled={generating}
+              className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            >
               Cancel
             </Button>
             <Button onClick={handleOpenWhatsApp} disabled={generating || !phone.trim()}>

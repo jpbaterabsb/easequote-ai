@@ -74,7 +74,7 @@ export const CustomerAutocomplete = memo(function CustomerAutocomplete({
       {error && <p className="text-sm text-destructive mt-1">{error}</p>}
 
       {showSuggestions && value.length >= 2 && (
-        <div className="absolute z-50 w-full mt-1 border rounded-md bg-white shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-2 border border-gray-200/50 rounded-lg bg-white/95 backdrop-blur-md shadow-elegant-lg max-h-60 overflow-auto animate-slide-in-down">
           {loading ? (
             <div className="flex items-center justify-center p-4">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -85,18 +85,18 @@ export const CustomerAutocomplete = memo(function CustomerAutocomplete({
                 key={customer.id}
                 type="button"
                 onClick={() => handleSelectCustomer(customer)}
-                className="w-full text-left px-4 py-2 hover:bg-muted transition-colors border-b last:border-b-0"
+                className="w-full text-left px-4 py-3 hover:bg-primary/5 focus:bg-primary/10 focus:outline-none transition-colors duration-150 border-b border-gray-100 last:border-b-0 first:rounded-t-lg last:rounded-b-lg"
               >
-                <div className="font-medium">{customer.name}</div>
+                <div className="font-medium text-gray-900">{customer.name}</div>
                 {(customer.email || customer.phone) && (
-                  <div className="text-xs text-muted-foreground mt-0.5">
+                  <div className="text-sm text-gray-500 mt-0.5">
                     {[customer.email, customer.phone].filter(Boolean).join(' • ')}
                   </div>
                 )}
               </button>
             ))
           ) : (
-            <div className="px-4 py-2 text-sm text-muted-foreground">
+            <div className="px-4 py-3 text-sm text-muted-foreground">
               No customers found. Continue typing to create a new customer.
             </div>
           )}

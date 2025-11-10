@@ -1,0 +1,68 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "actions": "Actions"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "rememberMe": "Remember me",
+    "signInWithGoogle": "Sign in with Google",
+    "welcomeBack": "Welcome Back",
+    "createAccount": "Create Your Account"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "createQuote": "Create New Quote",
+    "noQuotes": "No quotes yet",
+    "noQuotesDescription": "Get started by creating your first quote",
+    "quotes": "Quotes"
+  },
+  "quote": {
+    "create": "Create New Quote",
+    "edit": "Edit Quote",
+    "view": "View Quote",
+    "delete": "Delete Quote",
+    "deleteConfirm": "Are you sure you want to delete this quote? This action cannot be undone.",
+    "status": "Status",
+    "customer": "Customer",
+    "total": "Total",
+    "created": "Created",
+    "customerInfo": "Customer Info",
+    "lineItems": "Line Items",
+    "materialsNotes": "Materials & Notes",
+    "review": "Review"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "password": "Password",
+    "language": "Language"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Try Again",
+    "goToDashboard": "Go to Dashboard",
+    "unexpectedError": "We encountered an unexpected error. Please try again."
+  }
+}
+

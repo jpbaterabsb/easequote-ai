@@ -163,21 +163,21 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
             />
 
             {showSuggestions && filteredSuggestions.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 border rounded-md bg-white shadow-lg max-h-60 overflow-auto">
+              <div className="absolute z-50 w-full mt-2 border border-gray-200/50 rounded-lg bg-white/95 backdrop-blur-md shadow-elegant-lg max-h-60 overflow-auto animate-slide-in-down">
                 {filteredSuggestions.map((suggestion, idx) => (
                   <button
                     key={`${suggestion.option.id}-${idx}`}
                     type="button"
                     onClick={() => handleSelectSuggestion(suggestion)}
-                    className={`w-full text-left px-4 py-2 hover:bg-muted transition-colors border-b last:border-b-0 ${
+                    className={`w-full text-left px-4 py-3 hover:bg-primary/5 focus:bg-primary/10 focus:outline-none transition-all duration-150 border-b border-gray-100 last:border-b-0 first:rounded-t-lg last:rounded-b-lg ${
                       selectedSuggestion?.option.id === suggestion.option.id
-                        ? 'bg-primary/10 border-primary'
+                        ? 'bg-primary/10 border-primary/20'
                         : ''
                     }`}
                   >
-                    <div className="font-medium">{suggestion.fullName}</div>
+                    <div className="font-medium text-gray-900">{suggestion.fullName}</div>
                     {suggestion.path.length > 1 && (
-                      <div className="text-xs text-muted-foreground mt-0.5">
+                      <div className="text-sm text-gray-500 mt-0.5">
                         {suggestion.path.slice(0, -1).map((p) => p.name).join(' > ')}
                       </div>
                     )}
@@ -187,7 +187,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
             )}
 
             {showSuggestions && debouncedQuery.trim() && filteredSuggestions.length === 0 && (
-              <div className="absolute z-50 w-full mt-1 border rounded-md bg-white shadow-lg p-4 text-sm text-muted-foreground">
+              <div className="absolute z-50 w-full mt-2 border border-gray-200/50 rounded-lg bg-white/95 backdrop-blur-md shadow-elegant-lg p-4 text-sm text-gray-600 animate-slide-in-down">
                 No matching add-ons found. You can create a custom add-on below.
               </div>
             )}
@@ -200,7 +200,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
             </div>
           )}
 
-          <div className="pt-2 border-t">
+          <div className="pt-2 border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
@@ -210,7 +210,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
                 setSelectedSuggestion(null)
                 setShowSuggestions(false)
               }}
-              className="w-full"
+              className="w-full border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-200"
             >
               Create Custom Add-on
             </Button>
@@ -236,6 +236,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               setUseCustom(false)
               setCustomName('')
             }}
+            className="hover:bg-primary/10 hover:text-primary transition-all duration-200"
           >
             ← Back to Search
           </Button>
@@ -259,12 +260,12 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="flex-1"
+              className="flex-1 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
             >
               Cancel
             </Button>
@@ -272,7 +273,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               type="button"
               onClick={handleAdd}
               disabled={!canAdd()}
-              className="flex-1"
+              className="flex-1 bg-gradient-primary hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add to Item
             </Button>

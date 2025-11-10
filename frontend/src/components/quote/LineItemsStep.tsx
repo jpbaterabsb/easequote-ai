@@ -72,6 +72,7 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
                 variant="ghost"
                 size="icon"
                 onClick={handleCancelItem}
+                className="hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
               >
                 <X className="h-4 w-4" />
               </Button>

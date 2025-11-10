@@ -152,17 +152,17 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
       </div>
 
       {suggestions.length > 0 && !useManualEntry && (
-        <div className="border rounded-md bg-background shadow-lg max-h-60 overflow-auto z-10 relative">
+        <div className="border border-gray-200/50 rounded-lg bg-white/95 backdrop-blur-md shadow-elegant-lg max-h-60 overflow-auto z-10 relative mt-2 animate-slide-in-down">
           {suggestions.map((suggestion, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleSelectSuggestion(suggestion)}
-              className="w-full text-left px-4 py-2 hover:bg-muted transition-colors border-b last:border-b-0"
+              className="w-full text-left px-4 py-3 hover:bg-primary/5 focus:bg-primary/10 focus:outline-none transition-colors duration-150 border-b border-gray-100 last:border-b-0 first:rounded-t-lg"
             >
-              <div className="font-medium">{suggestion.formatted_address}</div>
+              <div className="font-medium text-gray-900">{suggestion.formatted_address}</div>
               {(suggestion.city || suggestion.state) && (
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-gray-500 mt-0.5">
                   {[suggestion.city, suggestion.state, suggestion.zip]
                     .filter(Boolean)
                     .join(', ')}
@@ -173,7 +173,7 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
           <button
             type="button"
             onClick={handleManualEntry}
-            className="w-full text-left px-4 py-2 hover:bg-muted transition-colors text-sm text-muted-foreground border-t"
+            className="w-full text-left px-4 py-3 hover:bg-primary/5 focus:bg-primary/10 focus:outline-none transition-colors duration-150 text-sm text-gray-600 border-t border-gray-100 rounded-b-lg"
           >
             Use address as entered
           </button>

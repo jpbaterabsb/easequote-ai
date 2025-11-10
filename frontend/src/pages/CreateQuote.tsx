@@ -169,61 +169,88 @@ export function CreateQuote() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold">Create New Quote</h1>
-            <Button variant="ghost" onClick={handleCancel}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl">
+        <div className="mb-4 sm:mb-6 animate-slide-in-down">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Create New Quote
+            </h1>
+            <Button 
+              variant="ghost" 
+              onClick={handleCancel} 
+              aria-label="Cancel quote creation"
+              className="hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+            >
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-8">
-            {STEPS.map((step, index) => (
-              <div key={step.number} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                      currentStep > step.number
-                        ? 'bg-primary text-primary-foreground'
-                        : currentStep === step.number
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {currentStep > step.number ? '✓' : step.number}
+          <div className="flex items-center justify-between mb-6 sm:mb-8 overflow-x-auto pb-2">
+            {STEPS.map((step, index) => {
+              const isCompleted = currentStep > step.number
+              const isActive = currentStep === step.number
+              const isPending = currentStep < step.number
+              
+              return (
+                <div key={step.number} className="flex items-center flex-1 min-w-0">
+                  <div className="flex flex-col items-center flex-1 min-w-0">
+                    <div
+                      className={`
+                        w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base
+                        transition-all duration-300 transform
+                        ${isCompleted 
+                          ? 'bg-primary text-primary-foreground shadow-lg scale-100' 
+                          : isActive
+                          ? 'bg-primary text-primary-foreground shadow-lg scale-110 ring-4 ring-primary/20'
+                          : 'bg-muted text-muted-foreground scale-100'
+                        }
+                      `}
+                      aria-current={isActive ? 'step' : undefined}
+                    >
+                      {isCompleted ? (
+                        <span className="animate-scale-in">✓</span>
+                      ) : (
+                        <span className={isActive ? 'animate-pulse' : ''}>{step.number}</span>
+                      )}
+                    </div>
+                    <div className={`mt-2 text-xs text-center truncate w-full px-1 transition-colors duration-200 ${
+                      isActive ? 'text-primary font-semibold' : 'text-muted-foreground'
+                    }`}>
+                      {step.title}
+                    </div>
                   </div>
-                  <div className="mt-2 text-xs text-center text-muted-foreground">
-                    {step.title}
-                  </div>
+                  {index < STEPS.length - 1 && (
+                    <div
+                      className={`
+                        h-1 flex-1 mx-2 sm:mx-4 rounded-full transition-all duration-500
+                        ${isCompleted ? 'bg-primary' : 'bg-muted'}
+                      `}
+                      aria-hidden="true"
+                    />
+                  )}
                 </div>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={`h-1 flex-1 mx-2 ${
-                      currentStep > step.number ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
-        <Card>
-          <CardContent className="p-6">
-            {currentStep === 1 && <CustomerStep onNext={handleNext} />}
-            {currentStep === 2 && (
-              <LineItemsStep onNext={handleNext} onBack={handleBack} />
-            )}
-            {currentStep === 3 && (
-              <MaterialsNotesStep onNext={handleNext} onBack={handleBack} />
-            )}
-            {currentStep === 4 && (
-              <ReviewStep onBack={handleBack} onSave={handleSave} saving={saving} />
-            )}
+        <Card className="shadow-elegant-lg border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up">
+          <CardContent className="p-4 sm:p-6">
+            <div className="animate-fade-in">
+              {currentStep === 1 && <CustomerStep onNext={handleNext} />}
+              {currentStep === 2 && (
+                <LineItemsStep onNext={handleNext} onBack={handleBack} />
+              )}
+              {currentStep === 3 && (
+                <MaterialsNotesStep onNext={handleNext} onBack={handleBack} />
+              )}
+              {currentStep === 4 && (
+                <ReviewStep onBack={handleBack} onSave={handleSave} saving={saving} />
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -236,11 +263,19 @@ export function CreateQuote() {
               Are you sure you want to cancel? All unsaved changes will be lost.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelDialog(false)}
+              className="w-full sm:w-auto border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            >
               Continue Editing
             </Button>
-            <Button variant="destructive" onClick={confirmCancel}>
+            <Button
+              variant="destructive"
+              onClick={confirmCancel}
+              className="w-full sm:w-auto bg-gradient-to-r from-red-500 via-red-600 to-red-500 hover:from-red-600 hover:via-red-700 hover:to-red-600 shadow-md hover:shadow-lg transition-all duration-200"
+            >
               Discard Changes
             </Button>
           </DialogFooter>

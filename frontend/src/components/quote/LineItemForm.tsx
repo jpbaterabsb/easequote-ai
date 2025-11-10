@@ -240,7 +240,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
             type="button"
             variant="outline"
             onClick={handleOpenAddonSelector}
-            className="w-full gap-2"
+            className="w-full gap-2 border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-200"
           >
             <Plus className="h-4 w-4" />
             Add Add-ons
@@ -254,17 +254,18 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
               {addons.map((addon) => (
                 <div
                   key={addon.id}
-                  className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-full"
+                  className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg hover:border-primary/40 hover:shadow-md transition-all duration-200"
                 >
-                  <span className="text-sm">
-                    {addon.name} - {formatCurrency(addon.price)}
+                  <span className="text-sm font-medium text-gray-900">
+                    {addon.name} - <span className="text-primary font-semibold">{formatCurrency(addon.price)}</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => handleRemoveAddon(addon.id)}
-                    className="hover:text-destructive"
+                    className="ml-1 p-0.5 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors duration-200"
+                    aria-label={`Remove ${addon.name}`}
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
@@ -292,11 +293,19 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+        <div className="flex gap-3">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel} 
+            className="flex-1 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+          >
             Cancel
           </Button>
-          <Button type="submit" className="flex-1">
+          <Button 
+            type="submit" 
+            className="flex-1 bg-gradient-primary hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-200"
+          >
             {item ? 'Update Item' : 'Add Item'}
           </Button>
         </div>

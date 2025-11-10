@@ -382,11 +382,19 @@ export function EditQuote() {
               Are you sure you want to cancel? All unsaved changes will be lost.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCancelDialog(false)}
+              className="w-full sm:w-auto border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            >
               Continue Editing
             </Button>
-            <Button variant="destructive" onClick={confirmCancel}>
+            <Button 
+              variant="destructive" 
+              onClick={confirmCancel}
+              className="w-full sm:w-auto bg-gradient-to-r from-red-500 via-red-600 to-red-500 hover:from-red-600 hover:via-red-700 hover:to-red-600 shadow-md hover:shadow-lg transition-all duration-200"
+            >
               Discard Changes
             </Button>
           </DialogFooter>

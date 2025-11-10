@@ -50,7 +50,7 @@ export function LanguageSelectorModal({
             <Button
               key={lang.code}
               variant="outline"
-              className="w-full justify-start h-auto py-4"
+              className="w-full justify-start h-auto py-4 border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-200"
               onClick={() => onLanguageSelect(lang.code)}
               disabled={loading}
             >
@@ -60,7 +60,12 @@ export function LanguageSelectorModal({
           ))}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={loading}
+            className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+          >
             Cancel
           </Button>
         </DialogFooter>

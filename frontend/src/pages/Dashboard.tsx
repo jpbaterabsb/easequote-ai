@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
-import { Settings, Plus, Loader2 } from 'lucide-react'
+import { Settings, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Quote, QuoteFilters, SortConfig } from '@/types/quote'
 import { EmptyState } from '@/components/dashboard/EmptyState'
 import { QuoteCard } from '@/components/dashboard/QuoteCard'
 import { QuoteFilters as QuoteFiltersComponent } from '@/components/dashboard/QuoteFilters'
 import { Pagination } from '@/components/dashboard/Pagination'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import {
   Select,
   SelectContent,
@@ -189,38 +190,48 @@ export function Dashboard() {
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">EaseQuote AI</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between animate-slide-in-down">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            EaseQuote AI
+          </h1>
           <div className="flex items-center gap-4">
             <Link to="/settings">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="hover:bg-primary/10 transition-all duration-200">
                 <Settings className="h-5 w-5" />
               </Button>
             </Link>
-            <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
-            <Button variant="outline" onClick={signOut}>
+            <span className="text-sm text-muted-foreground hidden sm:inline animate-fade-in">
+              {user?.email}
+            </span>
+            <Button 
+              variant="outline" 
+              onClick={signOut}
+              className="hover:bg-destructive/10 hover:border-destructive/50 transition-all duration-200"
+            >
               Sign Out
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+      <main className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-slide-in-up">
           <div>
-            <h2 className="text-2xl font-bold mb-1">Quotes</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-1 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Quotes
+            </h2>
             {!loading && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground animate-fade-in stagger-1">
                 {totalCount} {totalCount === 1 ? 'quote' : 'quotes'}
               </p>
             )}
           </div>
-          <Link to="/quotes/new">
-            <Button className="gap-2">
+          <Link to="/quotes/new" className="w-full sm:w-auto">
+            <Button className="gap-2 w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-primary hover:opacity-90">
               <Plus className="h-5 w-5" />
-              Create Quote
+              <span>Create Quote</span>
             </Button>
           </Link>
         </div>
@@ -228,9 +239,11 @@ export function Dashboard() {
         <div className="space-y-4 mb-6">
           <QuoteFiltersComponent filters={filters} onFiltersChange={setFilters} />
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort by:</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <label htmlFor="sort-select" className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+                Sort by:
+              </label>
               <Select
                 value={`${sortConfig.field}-${sortConfig.order}`}
                 onValueChange={(value) => {
@@ -238,7 +251,7 @@ export function Dashboard() {
                   handleSortChange(field)
                 }}
               >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger id="sort-select" className="w-full sm:w-[220px] h-11 border-gray-200 hover:border-primary/50 hover:shadow-md transition-all duration-200">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,21 +269,24 @@ export function Dashboard() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <LoadingSpinner size="lg" text="Loading quotes..." />
         ) : quotes.length === 0 ? (
           <EmptyState />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              {quotes.map((quote) => (
-                <QuoteCard
+              {quotes.map((quote, index) => (
+                <div
                   key={quote.id}
-                  quote={quote}
-                  onDelete={handleDelete}
-                  onStatusChanged={fetchQuotes}
-                />
+                  className="animate-scale-in"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <QuoteCard
+                    quote={quote}
+                    onDelete={handleDelete}
+                    onStatusChanged={fetchQuotes}
+                  />
+                </div>
               ))}
             </div>
 

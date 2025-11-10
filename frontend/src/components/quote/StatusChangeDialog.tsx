@@ -133,7 +133,12 @@ export function StatusChangeDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={saving}
+            className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+          >
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving || newStatus === currentStatus}>

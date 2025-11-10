@@ -1,0 +1,68 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "view": "Ver",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "submit": "Enviar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "actions": "Ações"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "register": "Registrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "forgotPassword": "Esqueceu a senha?",
+    "rememberMe": "Lembrar-me",
+    "signInWithGoogle": "Entrar com Google",
+    "welcomeBack": "Bem-vindo de volta",
+    "createAccount": "Crie sua conta"
+  },
+  "dashboard": {
+    "title": "Painel",
+    "createQuote": "Criar nova cotação",
+    "noQuotes": "Ainda não há cotações",
+    "noQuotesDescription": "Comece criando sua primeira cotação",
+    "quotes": "Cotações"
+  },
+  "quote": {
+    "create": "Criar nova cotação",
+    "edit": "Editar cotação",
+    "view": "Ver cotação",
+    "delete": "Excluir cotação",
+    "deleteConfirm": "Tem certeza de que deseja excluir esta cotação? Esta ação não pode ser desfeita.",
+    "status": "Status",
+    "customer": "Cliente",
+    "total": "Total",
+    "created": "Criado",
+    "customerInfo": "Informações do cliente",
+    "lineItems": "Itens",
+    "materialsNotes": "Materiais e notas",
+    "review": "Revisar"
+  },
+  "settings": {
+    "title": "Configurações",
+    "profile": "Perfil",
+    "password": "Senha",
+    "language": "Idioma"
+  },
+  "errors": {
+    "somethingWentWrong": "Algo deu errado",
+    "tryAgain": "Tentar novamente",
+    "goToDashboard": "Ir para o painel",
+    "unexpectedError": "Encontramos um erro inesperado. Por favor, tente novamente."
+  }
+}
+

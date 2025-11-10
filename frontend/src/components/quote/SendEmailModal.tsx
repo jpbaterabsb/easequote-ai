@@ -243,7 +243,12 @@ export function SendEmailModal({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              disabled={sending}
+              className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            >
               Cancel
             </Button>
             <Button onClick={handleSend} disabled={sending || !recipientEmail.trim()}>
