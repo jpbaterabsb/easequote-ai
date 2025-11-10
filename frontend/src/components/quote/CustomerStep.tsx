@@ -1,9 +1,11 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useCallback, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AddressAutocomplete } from './AddressAutocomplete'
+import { CustomerAutocomplete } from './CustomerAutocomplete'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import type { CustomerInfo } from '@/types/quote-creation'
 
@@ -45,6 +47,7 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
     },
   })
 
+  const customerName = watch('customer_name')
   const customerData = watch()
 
   const onSubmit = (data: CustomerFormData) => {
@@ -52,13 +55,38 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
     onNext()
   }
 
-  const handleAddressChange = (address: Partial<CustomerInfo>) => {
-    updateCustomer(address)
-    setValue('customer_address', address.customer_address || '')
-    setValue('customer_city', address.customer_city || '')
-    setValue('customer_state', address.customer_state || '')
-    setValue('customer_zip', address.customer_zip || '')
-  }
+  const handleCustomerNameChange = useCallback(
+    (value: string) => {
+      setValue('customer_name', value, { shouldValidate: true })
+      updateCustomer({ customer_name: value })
+    },
+    [setValue, updateCustomer]
+  )
+
+  const handleSelectCustomer = useCallback(
+    (customer: { name: string; phone?: string; email?: string }) => {
+      setValue('customer_name', customer.name, { shouldValidate: true })
+      setValue('customer_phone', customer.phone || '', { shouldValidate: true })
+      setValue('customer_email', customer.email || '', { shouldValidate: true })
+      updateCustomer({
+        customer_name: customer.name,
+        customer_phone: customer.phone,
+        customer_email: customer.email,
+      })
+    },
+    [setValue, updateCustomer]
+  )
+
+  const handleAddressChange = useCallback(
+    (address: Partial<CustomerInfo>) => {
+      updateCustomer(address)
+      setValue('customer_address', address.customer_address || '')
+      setValue('customer_city', address.customer_city || '')
+      setValue('customer_state', address.customer_state || '')
+      setValue('customer_zip', address.customer_zip || '')
+    },
+    [setValue, updateCustomer]
+  )
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -74,21 +102,14 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
           <Label htmlFor="customer_name">
             Customer Name <span className="text-destructive">*</span>
           </Label>
-          <Input
+          <CustomerAutocomplete
             id="customer_name"
-            {...register('customer_name')}
-            placeholder="John Doe"
-            className={errors.customer_name ? 'border-destructive' : ''}
-            onChange={(e) => {
-              register('customer_name').onChange(e)
-              updateCustomer({ customer_name: e.target.value })
-            }}
+            value={customerName}
+            onChange={handleCustomerNameChange}
+            onSelectCustomer={handleSelectCustomer}
+            error={errors.customer_name?.message}
+            placeholder="Start typing to search customers..."
           />
-          {errors.customer_name && (
-            <p className="text-sm text-destructive mt-1">
-              {errors.customer_name.message}
-            </p>
-          )}
         </div>
 
         <div>

@@ -11,6 +11,8 @@ import { RegisterSuccess } from '@/pages/RegisterSuccess'
 import { Dashboard } from '@/pages/Dashboard'
 import { Settings } from '@/pages/Settings'
 import { CreateQuote } from '@/pages/CreateQuote'
+import { ViewQuote } from '@/pages/ViewQuote'
+import { EditQuote } from '@/pages/EditQuote'
 
 function App() {
   return (
@@ -45,6 +47,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateQuote />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quotes/:id"
+            element={
+              <ProtectedRoute>
+                <ViewQuote />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quotes/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditQuote />
               </ProtectedRoute>
             }
           />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { CustomerStep } from '@/components/quote/CustomerStep'
@@ -9,7 +9,6 @@ import { ReviewStep } from '@/components/quote/ReviewStep'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/useToast'
-import { findOrCreateCustomer } from '@/utils/customers'
 import {
   Dialog,
   DialogContent,
@@ -19,7 +18,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { X } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
+import { Quote } from '@/types/quote'
+import { QuoteItem } from '@/types/quote-creation'
+import { logAuditEvent } from '@/utils/audit'
+import { findOrCreateCustomer } from '@/utils/customers'
 
 const STEPS = [
   { number: 1, title: 'Customer Info' },
@@ -28,7 +31,8 @@ const STEPS = [
   { number: 4, title: 'Review' },
 ]
 
-export function CreateQuote() {
+export function EditQuote() {
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
@@ -37,20 +41,111 @@ export function CreateQuote() {
     setCurrentStep,
     formData,
     reset,
+    updateCustomer,
+    setMaterials,
+    setPaymentMethod,
+    setNotes,
+    addItem,
+    removeItem,
   } = useQuoteCreationStore()
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [originalQuote, setOriginalQuote] = useState<Quote | null>(null)
 
-  // Auto-save draft every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Draft is automatically saved via Zustand persist middleware
-    }, 30000) // 30 seconds
-
-    return () => {
-      clearInterval(interval)
+    if (id) {
+      loadQuote()
     }
-  }, [])
+    return () => {
+      // Reset form when leaving
+      reset()
+    }
+  }, [id])
+
+  const loadQuote = async () => {
+    try {
+      setLoading(true)
+
+      // Fetch quote
+      const { data: quoteData, error: quoteError } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .single()
+
+      if (quoteError) throw quoteError
+
+      if (!quoteData) {
+        toast({
+          title: 'Error',
+          description: 'Quote not found',
+          variant: 'destructive',
+        })
+        navigate('/dashboard')
+        return
+      }
+
+      const quote = quoteData as Quote
+      setOriginalQuote(quote)
+
+      // Load customer data
+      updateCustomer({
+        customer_name: quote.customer_name,
+        customer_phone: quote.customer_phone || '',
+        customer_email: quote.customer_email || '',
+        customer_address: quote.customer_address || '',
+        customer_city: quote.customer_city || '',
+        customer_state: quote.customer_state || '',
+        customer_zip: quote.customer_zip || '',
+        customer_lat: quote.customer_lat || undefined,
+        customer_lng: quote.customer_lng || undefined,
+      })
+
+      // Load materials and notes
+      setMaterials(quote.customer_provides_materials, quote.material_cost)
+      setPaymentMethod(quote.payment_method || undefined)
+      setNotes(quote.notes || '')
+
+      // Fetch and load quote items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('quote_items')
+        .select('*')
+        .eq('quote_id', quote.id)
+        .order('created_at', { ascending: true })
+
+      if (itemsError) throw itemsError
+
+      // Clear existing items first
+      const currentItems = useQuoteCreationStore.getState().formData.items
+      currentItems.forEach((item) => removeItem(item.id))
+
+      // Add loaded items
+      ;(itemsData || []).forEach((item) => {
+        addItem({
+          id: item.id,
+          item_name: item.item_name,
+          area: item.area,
+          price_per_sqft: item.price_per_sqft,
+          line_total: item.line_total,
+          start_date: item.start_date || undefined,
+          end_date: item.end_date || undefined,
+          addons: (item.addons as any[]) || [],
+        })
+      })
+    } catch (error: any) {
+      console.error('Error loading quote:', error)
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to load quote. Please try again.',
+        variant: 'destructive',
+      })
+      navigate('/dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleNext = () => {
     if (currentStep < STEPS.length) {
@@ -65,10 +160,10 @@ export function CreateQuote() {
   }
 
   const handleSave = async () => {
-    if (!user) {
+    if (!user || !id || !originalQuote) {
       toast({
         title: 'Error',
-        description: 'You must be logged in to create a quote.',
+        description: 'You must be logged in to edit a quote.',
         variant: 'destructive',
       })
       return
@@ -79,8 +174,6 @@ export function CreateQuote() {
     try {
       // Calculate totals
       const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
-      // When checkbox is checked (we provide materials), add material cost to total
-      // When checkbox is unchecked (customer provides materials), don't add cost
       const total =
         subtotal + (!formData.customer_provides_materials ? formData.material_cost : 0)
 
@@ -91,11 +184,27 @@ export function CreateQuote() {
         email: formData.customer.customer_email || null,
       })
 
-      // Create quote
-      const { data: quote, error: quoteError } = await supabase
+      // Prepare old values for audit log
+      const oldValues = {
+        customer_name: originalQuote.customer_name,
+        customer_phone: originalQuote.customer_phone,
+        customer_email: originalQuote.customer_email,
+        customer_address: originalQuote.customer_address,
+        customer_city: originalQuote.customer_city,
+        customer_state: originalQuote.customer_state,
+        customer_zip: originalQuote.customer_zip,
+        status: originalQuote.status,
+        notes: originalQuote.notes,
+        customer_provides_materials: originalQuote.customer_provides_materials,
+        material_cost: originalQuote.material_cost,
+        subtotal: originalQuote.subtotal,
+        total_amount: originalQuote.total_amount,
+      }
+
+      // Update quote
+      const { error: quoteError } = await supabase
         .from('quotes')
-        .insert({
-          user_id: user.id,
+        .update({
           customer_id: customerId,
           customer_name: formData.customer.customer_name,
           customer_phone: formData.customer.customer_phone || null,
@@ -106,22 +215,54 @@ export function CreateQuote() {
           customer_zip: formData.customer.customer_zip || null,
           customer_lat: formData.customer.customer_lat || null,
           customer_lng: formData.customer.customer_lng || null,
-          status: 'created',
           notes: formData.notes || null,
           customer_provides_materials: formData.customer_provides_materials,
           material_cost: formData.material_cost,
           subtotal,
           total_amount: total,
         })
-        .select()
-        .single()
+        .eq('id', id)
 
       if (quoteError) throw quoteError
 
-      // Create quote items
+      // Prepare new values for audit log
+      const newValues = {
+        customer_name: formData.customer.customer_name,
+        customer_phone: formData.customer.customer_phone,
+        customer_email: formData.customer.customer_email,
+        customer_address: formData.customer.customer_address,
+        customer_city: formData.customer.customer_city,
+        customer_state: formData.customer.customer_state,
+        customer_zip: formData.customer.customer_zip,
+        status: originalQuote.status, // Status doesn't change on edit
+        notes: formData.notes,
+        customer_provides_materials: formData.customer_provides_materials,
+        material_cost: formData.material_cost,
+        subtotal,
+        total_amount: total,
+      }
+
+      // Log audit event
+      await logAuditEvent({
+        entity_type: 'quote',
+        entity_id: id,
+        action: 'updated',
+        old_values: oldValues,
+        new_values: newValues,
+      })
+
+      // Delete existing items
+      const { error: deleteItemsError } = await supabase
+        .from('quote_items')
+        .delete()
+        .eq('quote_id', id)
+
+      if (deleteItemsError) throw deleteItemsError
+
+      // Create new items
       if (formData.items.length > 0) {
         const itemsToInsert = formData.items.map((item) => ({
-          quote_id: quote.id,
+          quote_id: id,
           item_name: item.item_name,
           area: item.area,
           price_per_sqft: item.price_per_sqft,
@@ -138,20 +279,17 @@ export function CreateQuote() {
         if (itemsError) throw itemsError
       }
 
-      // Clear draft
-      reset()
-
       toast({
         title: 'Success',
-        description: `Quote ${quote.quote_number} created successfully!`,
+        description: `Quote ${originalQuote.quote_number} updated successfully!`,
       })
 
-      navigate('/dashboard')
+      navigate(`/quotes/${id}`)
     } catch (error: any) {
-      console.error('Error creating quote:', error)
+      console.error('Error updating quote:', error)
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create quote. Please try again.',
+        description: error.message || 'Failed to update quote. Please try again.',
         variant: 'destructive',
       })
     } finally {
@@ -165,7 +303,15 @@ export function CreateQuote() {
 
   const confirmCancel = () => {
     reset()
-    navigate('/dashboard')
+    navigate(`/quotes/${id}`)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (
@@ -173,7 +319,7 @@ export function CreateQuote() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold">Create New Quote</h1>
+            <h1 className="text-3xl font-bold">Edit Quote</h1>
             <Button variant="ghost" onClick={handleCancel}>
               <X className="h-4 w-4 mr-2" />
               Cancel
@@ -231,7 +377,7 @@ export function CreateQuote() {
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel Quote Creation?</DialogTitle>
+            <DialogTitle>Cancel Editing?</DialogTitle>
             <DialogDescription>
               Are you sure you want to cancel? All unsaved changes will be lost.
             </DialogDescription>

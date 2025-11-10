@@ -46,7 +46,19 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchQuotes()
-  }, [debouncedSearch, filters, sortConfig, currentPage])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    debouncedSearch,
+    filters.status,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.amountMin,
+    filters.amountMax,
+    filters.location,
+    sortConfig.field,
+    sortConfig.order,
+    currentPage,
+  ])
 
   const fetchQuotes = async () => {
     try {
@@ -117,12 +129,28 @@ export function Dashboard() {
 
   const handleDelete = async (quoteId: string) => {
     try {
+      // Get quote before deleting for audit log
+      const { data: quoteData } = await supabase
+        .from('quotes')
+        .select('quote_number')
+        .eq('id', quoteId)
+        .single()
+
       const { error } = await supabase
         .from('quotes')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', quoteId)
 
       if (error) throw error
+
+      // Log audit event
+      const { logAuditEvent } = await import('@/utils/audit')
+      await logAuditEvent({
+        entity_type: 'quote',
+        entity_id: quoteId,
+        action: 'deleted',
+        old_values: quoteData ? { quote_number: quoteData.quote_number } : undefined,
+      })
 
       toast({
         title: 'Success',
@@ -237,7 +265,12 @@ export function Dashboard() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {quotes.map((quote) => (
-                <QuoteCard key={quote.id} quote={quote} onDelete={handleDelete} />
+                <QuoteCard
+                  key={quote.id}
+                  quote={quote}
+                  onDelete={handleDelete}
+                  onStatusChanged={fetchQuotes}
+                />
               ))}
             </div>
 

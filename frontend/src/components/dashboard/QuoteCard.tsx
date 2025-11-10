@@ -21,14 +21,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { StatusChangeDialog } from '@/components/quote/StatusChangeDialog'
 
 interface QuoteCardProps {
   quote: Quote
   onDelete?: (quoteId: string) => void
+  onStatusChanged?: () => void
 }
 
-export function QuoteCard({ quote, onDelete }: QuoteCardProps) {
+export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showStatusDialog, setShowStatusDialog] = useState(false)
 
   const handleDelete = () => {
     if (onDelete) {
@@ -92,7 +95,7 @@ export function QuoteCard({ quote, onDelete }: QuoteCardProps) {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Send via WhatsApp
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled>
+                <DropdownMenuItem onSelect={() => setShowStatusDialog(true)}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Change Status
                 </DropdownMenuItem>
@@ -109,6 +112,19 @@ export function QuoteCard({ quote, onDelete }: QuoteCardProps) {
           </div>
         </CardContent>
       </Card>
+
+      <StatusChangeDialog
+        open={showStatusDialog}
+        onOpenChange={setShowStatusDialog}
+        currentStatus={quote.status}
+        quoteId={quote.id}
+        quoteNumber={quote.quote_number}
+        onStatusChanged={() => {
+          if (onStatusChanged) {
+            onStatusChanged()
+          }
+        }}
+      />
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
