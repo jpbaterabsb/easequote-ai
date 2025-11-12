@@ -69,12 +69,12 @@ export function QuoteFilters({ filters, onFiltersChange }: QuoteFiltersProps) {
         <Button
           variant={showFilters ? 'default' : 'outline'}
           onClick={() => setShowFilters(!showFilters)}
-          className="gap-2"
+          className="gap-2 font-medium"
         >
           <Filter className="h-4 w-4" />
           Filters
           {hasActiveFilters && (
-            <span className="ml-1 rounded-full bg-primary-foreground px-1.5 py-0.5 text-xs">
+            <span className="ml-1 rounded-full bg-primary text-white px-1.5 py-0.5 text-xs font-semibold">
               {filters.status.length +
                 (filters.dateFrom ? 1 : 0) +
                 (filters.dateTo ? 1 : 0) +

@@ -208,7 +208,7 @@ export function Dashboard() {
             <Button 
               variant="outline" 
               onClick={signOut}
-              className="hover:bg-destructive/10 hover:border-destructive/50 transition-all duration-200"
+              className="hover:bg-red-50 hover:border-red-200 hover:text-red-700 font-medium"
             >
               Sign Out
             </Button>
@@ -229,7 +229,7 @@ export function Dashboard() {
             )}
           </div>
           <Link to="/quotes/new" className="w-full sm:w-auto">
-            <Button className="gap-2 w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-primary hover:opacity-90">
+            <Button className="gap-2 w-full sm:w-auto font-semibold">
               <Plus className="h-5 w-5" />
               <span>Create Quote</span>
             </Button>
