@@ -316,8 +316,8 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
           handleCloseAddonSelector()
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] min-h-[200px] overflow-y-auto overscroll-contain">
+          <DialogHeader className="pb-2">
             <DialogTitle>Select Add-on</DialogTitle>
             <DialogDescription>
               Choose an add-on from the list or create a custom one.

@@ -28,22 +28,6 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
 
   const debouncedQuery = useDebounce(searchQuery, 200)
 
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false)
-      }
-    }
-
-    if (showSuggestions) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside)
-      }
-    }
-  }, [showSuggestions])
-
   // Flatten hierarchical structure into searchable suggestions
   const allSuggestions = useMemo(() => {
     const suggestions: AddonSuggestion[] = []
@@ -74,7 +58,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
   // Filter suggestions based on search query
   const filteredSuggestions = useMemo(() => {
     if (!debouncedQuery.trim()) {
-      return allSuggestions.slice(0, 10) // Show first 10 when no query
+      return [] // Don't show suggestions until user types
     }
 
     const query = debouncedQuery.toLowerCase()
@@ -84,7 +68,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
         suggestion.option.name.toLowerCase().includes(query) ||
         suggestion.path.some((p) => p.name.toLowerCase().includes(query))
       )
-      .slice(0, 10) // Limit to 10 results
+      .slice(0, 20) // Show up to 20 results with inline scrolling
   }, [debouncedQuery, allSuggestions])
 
   const handleSelectSuggestion = (suggestion: AddonSuggestion) => {
@@ -92,11 +76,19 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
     setSearchQuery(suggestion.fullName)
     setShowSuggestions(false)
     setUseCustom(false)
+    // Scroll to top of modal to show selected item and price input
+    setTimeout(() => {
+      const modal = document.querySelector('[role="dialog"]')
+      if (modal) {
+        modal.scrollTop = 0
+      }
+    }, 100)
   }
 
   const handleInputChange = (value: string) => {
     setSearchQuery(value)
-    setShowSuggestions(true)
+    // Only show suggestions when user types (not on focus)
+    setShowSuggestions(value.trim().length > 0)
     setSelectedSuggestion(null)
     setUseCustom(false)
   }
@@ -145,62 +137,94 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
     return hasName && price && parseFloat(price) >= 0
   }
 
+  // Auto-focus price input when suggestion is selected
+  const priceInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (selectedSuggestion && priceInputRef.current) {
+      setTimeout(() => priceInputRef.current?.focus(), 100)
+    }
+  }, [selectedSuggestion])
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {!useCustom ? (
         <>
-          <div className="relative" ref={containerRef}>
-            <Label htmlFor="addon_search">
-              Search Add-on <span className="text-destructive">*</span>
+          <div ref={containerRef}>
+            <Label htmlFor="addon_search" className="text-sm font-semibold mb-1.5 block">
+              Search Add-on <span className="text-red-500">*</span>
             </Label>
             <Input
               id="addon_search"
               value={searchQuery}
               onChange={(e) => handleInputChange(e.target.value)}
-              onFocus={() => setShowSuggestions(true)}
               placeholder="Type to search (e.g., 'vinyl plank' or 'demolition')"
               autoComplete="off"
+              className="text-base"
             />
-
-            {showSuggestions && filteredSuggestions.length > 0 && (
-              <div className="absolute z-50 w-full mt-2 border border-gray-200/50 rounded-lg bg-white/95 backdrop-blur-md shadow-elegant-lg max-h-60 overflow-auto animate-slide-in-down">
-                {filteredSuggestions.map((suggestion, idx) => (
-                  <button
-                    key={`${suggestion.option.id}-${idx}`}
-                    type="button"
-                    onClick={() => handleSelectSuggestion(suggestion)}
-                    className={`w-full text-left px-4 py-3 hover:bg-primary/5 focus:bg-primary/10 focus:outline-none transition-all duration-150 border-b border-gray-100 last:border-b-0 first:rounded-t-lg last:rounded-b-lg ${
-                      selectedSuggestion?.option.id === suggestion.option.id
-                        ? 'bg-primary/10 border-primary/20'
-                        : ''
-                    }`}
-                  >
-                    <div className="font-medium text-gray-900">{suggestion.fullName}</div>
-                    {suggestion.path.length > 1 && (
-                      <div className="text-sm text-gray-500 mt-0.5">
-                        {suggestion.path.slice(0, -1).map((p) => p.name).join(' > ')}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {showSuggestions && debouncedQuery.trim() && filteredSuggestions.length === 0 && (
-              <div className="absolute z-50 w-full mt-2 border border-gray-200/50 rounded-lg bg-white/95 backdrop-blur-md shadow-elegant-lg p-4 text-sm text-gray-600 animate-slide-in-down">
-                No matching add-ons found. You can create a custom add-on below.
-              </div>
-            )}
           </div>
 
-          {selectedSuggestion && (
-            <div className="p-3 bg-muted rounded-md">
-              <div className="text-sm font-medium">Selected:</div>
-              <div className="text-sm text-muted-foreground">{selectedSuggestion.fullName}</div>
+          {/* Inline suggestions - better for mobile, no cutoff issues */}
+          {showSuggestions && debouncedQuery.trim() && filteredSuggestions.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">
+                Suggestions ({filteredSuggestions.length})
+              </div>
+              <div className="rounded-lg bg-gray-50/50 ring-1 ring-inset ring-gray-200/30 overflow-hidden">
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {filteredSuggestions.map((suggestion, idx) => (
+                    <button
+                      key={`${suggestion.option.id}-${idx}`}
+                      type="button"
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      className={`w-full text-left px-4 py-3 transition-all duration-150 min-h-[56px] flex flex-col justify-center ${
+                        idx > 0 ? 'border-t border-gray-200/50' : ''
+                      } ${
+                        selectedSuggestion?.option.id === suggestion.option.id
+                          ? 'bg-primary/10 active:bg-primary/15'
+                          : 'bg-white active:bg-gray-50'
+                      } focus:bg-primary/10 focus:outline-none touch-manipulation`}
+                    >
+                      <div className="font-medium text-gray-900 text-sm sm:text-base">{suggestion.fullName}</div>
+                      {suggestion.path.length > 1 && (
+                        <div className="text-xs text-gray-500 mt-1 font-normal">
+                          {suggestion.path.slice(0, -1).map((p) => p.name).join(' › ')}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="pt-2 border-t border-gray-200">
+          {showSuggestions && debouncedQuery.trim() && filteredSuggestions.length === 0 && (
+            <div className="rounded-lg bg-gray-50/50 ring-1 ring-inset ring-gray-200/30 p-3 text-sm text-gray-600">
+              <div className="mb-2">
+                <span>No matching add-ons found.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setUseCustom(true)
+                  setSearchQuery('')
+                  setSelectedSuggestion(null)
+                  setShowSuggestions(false)
+                }}
+                className="text-primary hover:text-primary/80 font-medium text-sm underline touch-manipulation"
+              >
+                Create a custom add-on instead
+              </button>
+            </div>
+          )}
+
+          {selectedSuggestion && (
+            <div className="p-3 bg-primary/5 rounded-lg ring-1 ring-inset ring-primary/20">
+              <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-0.5">Selected</div>
+              <div className="text-sm font-medium text-gray-900">{selectedSuggestion.fullName}</div>
+            </div>
+          )}
+
+          {!showSuggestions && (
             <Button
               type="button"
               variant="outline"
@@ -210,23 +234,25 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
                 setSelectedSuggestion(null)
                 setShowSuggestions(false)
               }}
-              className="w-full border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-200"
+              className="w-full font-medium touch-manipulation"
             >
-              Create Custom Add-on
+              + Create Custom Add-on
             </Button>
-          </div>
+          )}
         </>
       ) : (
         <div className="space-y-4">
           <div>
-            <Label htmlFor="custom_name">
-              Add-on Name <span className="text-destructive">*</span>
+            <Label htmlFor="custom_name" className="text-sm font-semibold mb-2 block">
+              Add-on Name <span className="text-red-500">*</span>
             </Label>
             <Input
               id="custom_name"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder="e.g., Custom Installation"
+              className="text-base"
+              autoFocus
             />
           </div>
           <Button
@@ -236,7 +262,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               setUseCustom(false)
               setCustomName('')
             }}
-            className="hover:bg-primary/10 hover:text-primary transition-all duration-200"
+            className="text-sm"
           >
             ← Back to Search
           </Button>
@@ -244,12 +270,13 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
       )}
 
       {(selectedSuggestion !== null || useCustom || searchQuery.trim()) && (
-        <div className="space-y-4 pt-4 border-t">
+        <div className="space-y-3 pt-4 border-t border-gray-200/50">
           <div>
-            <Label htmlFor="price">
-              Price (USD) <span className="text-destructive">*</span>
+            <Label htmlFor="price" className="text-sm font-semibold mb-2 block">
+              Price (USD) <span className="text-red-500">*</span>
             </Label>
             <Input
+              ref={priceInputRef}
               id="price"
               type="number"
               step="0.01"
@@ -257,15 +284,16 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="0.00"
+              className="text-base"
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 pt-1">
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="flex-1 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+              className="flex-1 font-medium"
             >
               Cancel
             </Button>
@@ -273,7 +301,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               type="button"
               onClick={handleAdd}
               disabled={!canAdd()}
-              className="flex-1 bg-gradient-primary hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 font-semibold"
             >
               Add to Item
             </Button>
