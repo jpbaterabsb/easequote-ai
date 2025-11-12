@@ -188,7 +188,7 @@ export function CreateQuote() {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-6 sm:mb-8 overflow-x-auto pb-2">
+          <div className="flex items-center justify-between mb-6 sm:mb-8 overflow-x-auto pb-2 pt-2">
             {STEPS.map((step, index) => {
               const isCompleted = currentStep > step.number
               const isActive = currentStep === step.number
@@ -196,16 +196,16 @@ export function CreateQuote() {
               
               return (
                 <div key={step.number} className="flex items-center flex-1 min-w-0">
-                  <div className="flex flex-col items-center flex-1 min-w-0">
+                  <div className="flex flex-col items-center flex-1 min-w-0 pt-2">
                     <div
                       className={`
                         w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base
                         transition-all duration-300 transform
                         ${isCompleted 
-                          ? 'bg-primary text-primary-foreground shadow-lg scale-100' 
+                          ? 'bg-primary text-white shadow-lg scale-100' 
                           : isActive
-                          ? 'bg-primary text-primary-foreground shadow-lg scale-110 ring-4 ring-primary/20'
-                          : 'bg-muted text-muted-foreground scale-100'
+                          ? 'bg-primary text-white shadow-lg scale-110 ring-4 ring-primary/20'
+                          : 'bg-gray-200 text-gray-600 scale-100'
                         }
                       `}
                       aria-current={isActive ? 'step' : undefined}
