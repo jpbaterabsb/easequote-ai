@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { resizeImage, validateImageFile } from '@/utils/imageResize'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface ImageUploadProps {
   label: string
@@ -26,6 +27,7 @@ export function ImageUpload({
   maxSizeMB = 2,
   className,
 }: ImageUploadProps) {
+  const { t } = useTranslation()
   const [preview, setPreview] = useState<string | null>(currentUrl || null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -124,11 +126,11 @@ export function ImageUpload({
               disabled={uploading}
               asChild
             >
-              <span>{uploading ? 'Uploading...' : preview ? 'Change' : 'Upload'}</span>
+              <span>{uploading ? t('settings.uploading') : preview ? t('settings.change') : t('settings.upload')}</span>
             </Button>
           </Label>
           <p className="text-xs text-muted-foreground mt-1">
-            Max {maxSizeMB}MB, JPG or PNG
+            {t('settings.maxSizeFormat', { maxSizeMB })}
           </p>
         </div>
       </div>

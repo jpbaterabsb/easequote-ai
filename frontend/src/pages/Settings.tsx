@@ -84,8 +84,8 @@ function SettingsContent() {
       console.error('Error loading profile:', error)
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load profile data',
+        title: t('common.error'),
+        description: t('settings.failedToLoadProfile'),
       })
     }
   }
@@ -112,22 +112,22 @@ function SettingsContent() {
         })
         if (emailError) throw emailError
         toast({
-          title: 'Email Update',
-          description: 'Please check your email to confirm the new address',
+          title: t('settings.emailUpdate'),
+          description: t('settings.emailUpdateDescription'),
         })
       }
 
       toast({
         variant: 'success',
-        title: 'Success',
-        description: 'Profile updated successfully',
+        title: t('common.success'),
+        description: t('settings.profileUpdated'),
       })
       setHasChanges(false)
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to update profile',
+        title: t('common.error'),
+        description: error.message || t('settings.failedToUpdateProfile'),
       })
     } finally {
       setLoading(false)
@@ -156,8 +156,8 @@ function SettingsContent() {
 
       toast({
         variant: 'success',
-        title: 'Success',
-        description: 'Password updated successfully',
+        title: t('common.success'),
+        description: t('settings.passwordUpdated'),
       })
 
       passwordForm.reset()
@@ -165,8 +165,8 @@ function SettingsContent() {
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to update password',
+        title: t('common.error'),
+        description: error.message || t('settings.failedToUpdatePassword'),
       })
     } finally {
       setLoading(false)
@@ -268,21 +268,21 @@ function SettingsContent() {
         <main className="container mx-auto px-4 py-8 max-w-4xl">
           <Card>
             <CardHeader>
-              <CardTitle>Settings</CardTitle>
-              <CardDescription>Manage your account settings and preferences</CardDescription>
+              <CardTitle>{t('settings.title')}</CardTitle>
+              <CardDescription>{t('settings.manageAccount')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="profile" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="profile">Profile</TabsTrigger>
-                  <TabsTrigger value="password">Password</TabsTrigger>
-                  <TabsTrigger value="branding">Branding</TabsTrigger>
+                  <TabsTrigger value="profile">{t('settings.profile')}</TabsTrigger>
+                  <TabsTrigger value="password">{t('settings.password')}</TabsTrigger>
+                  <TabsTrigger value="branding">{t('settings.branding')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profile" className="space-y-4 mt-6">
                   <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Label htmlFor="fullName">{t('settings.fullNameRequired')}</Label>
                       <Input
                         id="fullName"
                         {...profileForm.register('fullName', {
@@ -297,7 +297,7 @@ function SettingsContent() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email">{t('common.email')} *</Label>
                       <Input
                         id="email"
                         type="email"
@@ -311,12 +311,12 @@ function SettingsContent() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Changing your email requires verification
+                        {t('settings.emailVerificationRequired')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone">{t('settings.phoneNumber')}</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -328,7 +328,7 @@ function SettingsContent() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="language">Language</Label>
+                      <Label htmlFor="language">{t('settings.language')}</Label>
                       <Select
                         value={profileForm.watch('language')}
                         onValueChange={(value) => {
@@ -337,19 +337,19 @@ function SettingsContent() {
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select language" />
+                          <SelectValue placeholder={t('settings.selectLanguage')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="en">🇺🇸 English</SelectItem>
-                          <SelectItem value="es">🇪🇸 Español</SelectItem>
-                          <SelectItem value="pt">🇧🇷 Português</SelectItem>
+                          <SelectItem value="en">🇺🇸 {t('common.english')}</SelectItem>
+                          <SelectItem value="es">🇪🇸 {t('common.spanish')}</SelectItem>
+                          <SelectItem value="pt">🇧🇷 {t('common.portuguese')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="flex gap-2">
                       <Button type="submit" disabled={loading || !hasChanges}>
-                        {loading ? 'Saving...' : 'Save Changes'}
+                        {loading ? t('settings.saving') : t('settings.saveChanges')}
                       </Button>
                       {hasChanges && (
                         <Button
@@ -357,7 +357,7 @@ function SettingsContent() {
                           variant="outline"
                           onClick={() => setShowCancelDialog(true)}
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </Button>
                       )}
                     </div>
@@ -367,7 +367,7 @@ function SettingsContent() {
                 <TabsContent value="password" className="space-y-4 mt-6">
                   <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password *</Label>
+                      <Label htmlFor="currentPassword">{t('settings.currentPasswordRequired')}</Label>
                       <PasswordInput
                         id="currentPassword"
                         {...passwordForm.register('currentPassword')}
@@ -380,7 +380,7 @@ function SettingsContent() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password *</Label>
+                      <Label htmlFor="newPassword">{t('settings.newPasswordRequired')}</Label>
                       <PasswordInput
                         id="newPassword"
                         {...passwordForm.register('newPassword')}
@@ -398,7 +398,7 @@ function SettingsContent() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password *</Label>
+                      <Label htmlFor="confirmPassword">{t('settings.confirmNewPassword')}</Label>
                       <PasswordInput
                         id="confirmPassword"
                         {...passwordForm.register('confirmPassword')}
@@ -411,7 +411,7 @@ function SettingsContent() {
                     </div>
 
                     <Button type="submit" disabled={loading}>
-                      {loading ? 'Updating...' : 'Update Password'}
+                      {loading ? t('settings.updating') : t('settings.updatePassword')}
                     </Button>
                   </form>
                 </TabsContent>
@@ -419,7 +419,7 @@ function SettingsContent() {
                 <TabsContent value="branding" className="space-y-4 mt-6">
                   <div className="space-y-6">
                     <ImageUpload
-                      label="Profile Picture"
+                      label={t('settings.profilePicture')}
                       currentUrl={profile?.avatar_url}
                       onUpload={handleAvatarUpload}
                       onRemove={handleAvatarRemove}
@@ -429,7 +429,7 @@ function SettingsContent() {
                     />
 
                     <ImageUpload
-                      label="Company Logo"
+                      label={t('settings.companyLogo')}
                       currentUrl={profile?.company_logo_url}
                       onUpload={handleLogoUpload}
                       onRemove={handleLogoRemove}
@@ -438,7 +438,7 @@ function SettingsContent() {
                       maxSizeMB={2}
                     />
                     <p className="text-sm text-muted-foreground">
-                      Your company logo will appear on PDF quotes
+                      {t('settings.companyLogoDescription')}
                     </p>
                   </div>
                 </TabsContent>
@@ -450,14 +450,14 @@ function SettingsContent() {
         <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Discard Changes?</DialogTitle>
+              <DialogTitle>{t('settings.discardChangesTitle')}</DialogTitle>
               <DialogDescription>
-                You have unsaved changes. Are you sure you want to discard them?
+                {t('settings.discardChangesDescription')}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-                Keep Editing
+                {t('settings.keepEditing')}
               </Button>
               <Button
                 variant="destructive"
@@ -467,7 +467,7 @@ function SettingsContent() {
                   setShowCancelDialog(false)
                 }}
               >
-                Discard Changes
+                {t('settings.discardChanges')}
               </Button>
             </DialogFooter>
           </DialogContent>

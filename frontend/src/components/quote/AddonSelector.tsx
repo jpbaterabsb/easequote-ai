@@ -153,7 +153,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
         <>
           <div ref={containerRef}>
             <Label htmlFor="addon_search" className="text-sm font-semibold mb-1.5 block">
-              Search Add-on <span className="text-red-500">*</span>
+              {t('quoteCreation.searchAddon')} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="addon_search"
@@ -169,7 +169,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
           {showSuggestions && debouncedQuery.trim() && filteredSuggestions.length > 0 && (
             <div className="space-y-2">
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">
-                Suggestions ({filteredSuggestions.length})
+                {t('quoteCreation.suggestions')} ({filteredSuggestions.length})
               </div>
               <div className="rounded-lg bg-gray-50/50 ring-1 ring-inset ring-gray-200/30 overflow-hidden">
                 <div className="max-h-[60vh] overflow-y-auto">
@@ -202,7 +202,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
           {showSuggestions && debouncedQuery.trim() && filteredSuggestions.length === 0 && (
             <div className="rounded-lg bg-gray-50/50 ring-1 ring-inset ring-gray-200/30 p-3 text-sm text-gray-600">
               <div className="mb-2">
-                <span>No matching add-ons found.</span>
+                <span>{t('quoteCreation.noMatchingAddons')}</span>
               </div>
               <button
                 type="button"
@@ -214,14 +214,14 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
                 }}
                 className="text-primary hover:text-primary/80 font-medium text-sm underline touch-manipulation"
               >
-                Create a custom add-on instead
+                {t('quoteCreation.createCustomAddonInstead')}
               </button>
             </div>
           )}
 
           {selectedSuggestion && (
             <div className="p-3 bg-primary/5 rounded-lg ring-1 ring-inset ring-primary/20">
-              <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-0.5">Selected</div>
+              <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-0.5">{t('quoteCreation.selected')}</div>
               <div className="text-sm font-medium text-gray-900">{selectedSuggestion.fullName}</div>
             </div>
           )}
@@ -238,7 +238,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               }}
               className="w-full font-medium touch-manipulation"
             >
-              + Create Custom Add-on
+              + {t('quoteCreation.createCustomAddon')}
             </Button>
           )}
         </>
@@ -246,7 +246,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
         <div className="space-y-4">
           <div>
             <Label htmlFor="custom_name" className="text-sm font-semibold mb-2 block">
-              Add-on Name <span className="text-red-500">*</span>
+              {t('quoteCreation.addonName')} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="custom_name"
@@ -266,7 +266,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
             }}
             className="text-sm"
           >
-            ← Back to Search
+            ← {t('quoteCreation.backToSearch')}
           </Button>
         </div>
       )}
@@ -275,7 +275,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
         <div className="space-y-3 pt-4 border-t border-gray-200/50">
           <div>
             <Label htmlFor="price" className="text-sm font-semibold mb-2 block">
-              Price (USD) <span className="text-red-500">*</span>
+              {t('quoteCreation.price')} (USD) <span className="text-red-500">*</span>
             </Label>
             <Input
               ref={priceInputRef}
@@ -297,7 +297,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               onClick={onCancel}
               className="flex-1 font-medium"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -305,7 +305,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               disabled={!canAdd()}
               className="flex-1 font-semibold"
             >
-              Add to Item
+              {t('quoteCreation.addToItem')}
             </Button>
           </div>
         </div>
