@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Home } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -17,6 +19,7 @@ import { ImageUpload } from '@/components/settings/ImageUpload'
 import { useToast } from '@/hooks/useToast'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { LanguageSelector } from '@/components/ui/language-selector'
+import { UserMenu } from '@/components/ui/user-menu'
 import { useTranslation } from '@/hooks/useTranslation'
 
 const profileSchema = z.object({
@@ -39,7 +42,7 @@ type ProfileFormData = z.infer<typeof profileSchema>
 type PasswordFormData = z.infer<typeof passwordSchema>
 
 function SettingsContent() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { toast } = useToast()
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
@@ -253,15 +256,25 @@ function SettingsContent() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <h1 className="text-2xl font-bold">EaseQuote AI</h1>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between animate-slide-in-down">
+            <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              EaseQuote AI
+            </Link>
             <div className="flex items-center gap-4">
               <LanguageSelector />
-              <Button variant="outline" onClick={() => window.history.back()}>
-                {t('common.back')}
-              </Button>
+              <Link to="/">
+                <Button variant="ghost" size="icon" className="hover:bg-primary/10 transition-all duration-200">
+                  <Home className="h-5 w-5" />
+                </Button>
+              </Link>
+              <UserMenu
+                userEmail={user?.email}
+                avatarUrl={profile?.avatar_url}
+                fullName={profile?.full_name}
+                onSignOut={signOut}
+              />
             </div>
           </div>
         </header>

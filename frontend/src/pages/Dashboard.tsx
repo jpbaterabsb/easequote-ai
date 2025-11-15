@@ -20,6 +20,7 @@ import {
 import { useDebounce } from '@/hooks/useDebounce'
 import { useToast } from '@/hooks/useToast'
 import { LanguageSelector } from '@/components/ui/language-selector'
+import { UserMenu } from '@/components/ui/user-menu'
 import { useTranslation } from '@/hooks/useTranslation'
 
 const ITEMS_PER_PAGE = 20
@@ -32,6 +33,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
+  const [profile, setProfile] = useState<{ avatar_url?: string; full_name?: string } | null>(null)
   const [filters, setFilters] = useState<QuoteFilters>({
     search: '',
     status: [],
@@ -49,6 +51,12 @@ export function Dashboard() {
   const debouncedSearch = useDebounce(filters.search, 300)
 
   useEffect(() => {
+    if (user) {
+      loadProfile()
+    }
+  }, [user])
+
+  useEffect(() => {
     fetchQuotes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -63,6 +71,22 @@ export function Dashboard() {
     sortConfig.order,
     currentPage,
   ])
+
+  const loadProfile = async () => {
+    if (!user) return
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url, full_name')
+        .eq('id', user.id)
+        .single()
+      if (data) {
+        setProfile(data)
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error)
+    }
+  }
 
   const fetchQuotes = async () => {
     try {
@@ -206,16 +230,12 @@ export function Dashboard() {
                 <Settings className="h-5 w-5" />
               </Button>
             </Link>
-            <span className="text-sm text-muted-foreground hidden sm:inline animate-fade-in">
-              {user?.email}
-            </span>
-            <Button 
-              variant="outline" 
-              onClick={signOut}
-              className="hover:bg-red-50 hover:border-red-200 hover:text-red-700 font-medium"
-            >
-              {t('common.signOut')}
-            </Button>
+            <UserMenu
+              userEmail={user?.email}
+              avatarUrl={profile?.avatar_url}
+              fullName={profile?.full_name}
+              onSignOut={signOut}
+            />
           </div>
         </div>
       </header>
