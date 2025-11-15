@@ -21,24 +21,9 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
   )
 
   const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
-  // When checkbox is checked (we provide materials), add material cost to total
-  // When checkbox is unchecked (customer provides materials), don't add cost
+  // When checkbox is unchecked (we provide materials), add material cost to total
+  // When checkbox is checked (customer provides materials), don't add cost
   const total = subtotal + (!formData.customer_provides_materials ? formData.material_cost : 0)
-
-  const handleMaterialToggle = (checked: boolean) => {
-    // checked = customer provides materials = false (we provide)
-    // unchecked = customer provides materials = true (customer provides)
-    setMaterials(!checked, !checked ? parseFloat(materialCost) || 0 : 0)
-  }
-
-  const handleMaterialCostChange = (value: string) => {
-    setMaterialCost(value)
-    // Only update cost when we provide materials (checkbox checked = customer_provides_materials = false)
-    if (!formData.customer_provides_materials) {
-      const cost = parseFloat(value) || 0
-      setMaterials(false, cost)
-    }
-  }
 
   const handleNotesChange = (value: string) => {
     if (value.length <= 500) {
@@ -59,8 +44,12 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
         <div className="flex items-center space-x-2">
           <Checkbox
             id="provides_materials"
-            checked={!formData.customer_provides_materials}
-            onCheckedChange={handleMaterialToggle}
+            checked={formData.customer_provides_materials}
+            onCheckedChange={(checked) => {
+              // When checked: customer provides materials = true (hide cost)
+              // When unchecked: customer provides materials = false (show cost)
+              setMaterials(checked as boolean, checked ? 0 : parseFloat(materialCost) || 0)
+            }}
           />
           <Label htmlFor="provides_materials" className="cursor-pointer">
             Customer Provides Materials?
@@ -76,7 +65,15 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
               step="0.01"
               min="0"
               value={materialCost}
-              onChange={(e) => handleMaterialCostChange(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value
+                setMaterialCost(value)
+                // Update cost when we provide materials (checkbox unchecked)
+                if (!formData.customer_provides_materials) {
+                  const cost = parseFloat(value) || 0
+                  setMaterials(false, cost)
+                }
+              }}
               placeholder="0.00"
             />
             <p className="text-sm text-muted-foreground mt-1">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
@@ -188,18 +188,18 @@ export function CreateQuote() {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-6 sm:mb-8 overflow-x-auto pb-2 pt-2">
+          <div className="flex items-center mb-6 sm:mb-8 overflow-x-auto pb-2 pt-2 px-1 sm:px-2">
             {STEPS.map((step, index) => {
               const isCompleted = currentStep > step.number
               const isActive = currentStep === step.number
               const isPending = currentStep < step.number
               
               return (
-                <div key={step.number} className="flex items-center flex-1 min-w-0">
-                  <div className="flex flex-col items-center flex-1 min-w-0 pt-2">
+                <Fragment key={step.number}>
+                  <div className={`flex flex-col items-center flex-shrink-0 pt-2 ${isActive ? 'px-3 sm:px-4' : ''}`}>
                     <div
                       className={`
-                        w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base
+                        w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold
                         transition-all duration-300 transform
                         ${isCompleted 
                           ? 'bg-primary text-white shadow-lg scale-100' 
@@ -211,9 +211,9 @@ export function CreateQuote() {
                       aria-current={isActive ? 'step' : undefined}
                     >
                       {isCompleted ? (
-                        <span className="animate-scale-in">✓</span>
+                        <span className="animate-scale-in text-sm sm:text-base leading-[1] block">✓</span>
                       ) : (
-                        <span className={isActive ? 'animate-pulse' : ''}>{step.number}</span>
+                        <span className={`text-sm sm:text-base leading-[1] block ${isActive ? 'animate-pulse' : ''}`}>{step.number}</span>
                       )}
                     </div>
                     <div className={`mt-2 text-xs text-center truncate w-full px-1 transition-colors duration-200 ${
@@ -225,13 +225,13 @@ export function CreateQuote() {
                   {index < STEPS.length - 1 && (
                     <div
                       className={`
-                        h-1 flex-1 mx-2 sm:mx-4 rounded-full transition-all duration-500
+                        h-1 flex-1 mx-2 sm:mx-4 rounded-full transition-all duration-500 flex-shrink-0
                         ${isCompleted ? 'bg-primary' : 'bg-muted'}
                       `}
                       aria-hidden="true"
                     />
                   )}
-                </div>
+                </Fragment>
               )
             })}
           </div>
