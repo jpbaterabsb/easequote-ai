@@ -168,7 +168,7 @@ export function findAddonOption(id: string, options: AddonOption[] = addonOption
   return null
 }
 
-export function getFullAddonName(option: AddonOption, options: AddonOption[] = addonOptions, path: string[] = []): string {
+export function getFullAddonName(option: AddonOption, _options: AddonOption[] = addonOptions, path: string[] = []): string {
   const currentPath = [...path, option.name]
   if (option.children && option.children.length > 0) {
     return currentPath.join(' - ')

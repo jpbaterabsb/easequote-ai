@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
-import { QuoteStatus } from '@/types/quote'
+import type { QuoteStatus } from '@/types/quote'
 import { logAuditEvent } from '@/utils/audit'
 import { useToast } from '@/hooks/useToast'
 import { supabase } from '@/lib/supabase/client'

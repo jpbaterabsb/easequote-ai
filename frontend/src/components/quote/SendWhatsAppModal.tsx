@@ -12,8 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2, MessageCircle, ExternalLink } from 'lucide-react'
-import { LanguageSelectorModal, Language } from './LanguageSelectorModal'
-import { useAuth } from '@/contexts/AuthContext'
+import { LanguageSelectorModal } from './LanguageSelectorModal'
+import type { Language } from './LanguageSelectorModal'
 import { supabase } from '@/lib/supabase/client'
 import { formatCurrency } from '@/utils/format'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -60,18 +60,6 @@ Ver seu orçamento: ${pdfUrl}
 Avise-me se tiver alguma dúvida!`,
 }
 
-// Format phone number for display (adds formatting but keeps digits)
-function formatPhoneDisplay(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
-  }
-  if (digits.length === 11 && digits[0] === '1') {
-    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
-  }
-  return phone
-}
-
 export function SendWhatsAppModal({
   open,
   onOpenChange,
@@ -82,14 +70,12 @@ export function SendWhatsAppModal({
   totalAmount,
   onWhatsAppOpened,
 }: SendWhatsAppModalProps) {
-  const { user } = useAuth()
   const { t } = useTranslation()
   const [phone, setPhone] = useState(customerPhone || '')
   const [message, setMessage] = useState('')
   const [language, setLanguage] = useState<Language>('en')
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [generating, setGenerating] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (open && customerPhone) {
@@ -106,15 +92,7 @@ export function SendWhatsAppModal({
       const previewMessage = template(customerName, quoteNumber, totalAmount, placeholderUrl)
       setMessage(previewMessage.replace(placeholderUrl, '[PDF link will be generated]'))
     }
-  }, [open, language])
-
-  const updateMessage = () => {
-    if (pdfUrl) {
-      const template = messageTemplates[language]
-      const newMessage = template(customerName, quoteNumber, totalAmount, pdfUrl)
-      setMessage(newMessage)
-    }
-  }
+  }, [open, language, customerName, quoteNumber, totalAmount])
 
   const handleLanguageSelect = (selectedLanguage: Language) => {
     setLanguage(selectedLanguage)
@@ -156,7 +134,6 @@ export function SendWhatsAppModal({
       if (data?.whatsapp_url) {
         // Update message preview with actual PDF URL
         if (data.pdf_url) {
-          setPdfUrl(data.pdf_url)
           const template = messageTemplates[language]
           const updatedMessage = template(
             customerName,

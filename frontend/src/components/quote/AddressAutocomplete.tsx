@@ -24,7 +24,7 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [useManualEntry, setUseManualEntry] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     setQuery(value.customer_address || '')

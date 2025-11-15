@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { QuoteStatus } from '@/types/quote'
+import type { QuoteStatus } from '@/types/quote'
 
 interface StatusBadgeProps {
   status: QuoteStatus
