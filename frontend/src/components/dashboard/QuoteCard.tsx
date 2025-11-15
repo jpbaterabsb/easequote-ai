@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { StatusBadge } from './StatusBadge'
 import { formatCurrency, formatRelativeDate } from '@/utils/format'
-import { Quote } from '@/types/quote'
+import type { Quote } from '@/types/quote'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Eye, Edit, Mail, MessageSquare, RefreshCw, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { StatusChangeDialog } from '@/components/quote/StatusChangeDialog'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface QuoteCardProps {
   quote: Quote
@@ -24,6 +25,14 @@ interface QuoteCardProps {
 export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
+  const [dateKey, setDateKey] = useState(0)
+  // Use translation hook to force re-render when language changes
+  const { currentLanguage } = useTranslation() // This ensures dates are updated when language changes
+
+  // Force re-render when language changes
+  useEffect(() => {
+    setDateKey((prev) => prev + 1)
+  }, [currentLanguage])
 
   const handleDelete = () => {
     if (onDelete) {
@@ -56,7 +65,7 @@ export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) 
                 <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                   {formatCurrency(quote.total_amount)}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground" key={`date-${currentLanguage}-${dateKey}`}>
                   {formatRelativeDate(quote.created_at)}
                 </span>
               </div>

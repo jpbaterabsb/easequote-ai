@@ -17,16 +17,17 @@ import { Plus, X } from 'lucide-react'
 import { formatCurrency } from '@/utils/format'
 import type { QuoteItem, Addon } from '@/types/quote-creation'
 import { AddonSelector } from './AddonSelector'
+import { useTranslation } from '@/hooks/useTranslation'
 
-const lineItemSchema = z.object({
-  item_name: z.string().min(1, 'Item name is required'),
-  area: z.number().min(0.01, 'Area must be greater than 0'),
-  price_per_sqft: z.number().min(0, 'Price must be greater than or equal to 0'),
+const getLineItemSchema = (t: (key: string) => string) => z.object({
+  item_name: z.string().min(1, t('quoteCreation.itemNameRequired')),
+  area: z.number().min(0.01, t('quoteCreation.areaRequired')),
+  price_per_sqft: z.number().min(0, t('quoteCreation.priceRequired')),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
 })
 
-type LineItemFormData = z.infer<typeof lineItemSchema>
+type LineItemFormData = z.infer<ReturnType<typeof getLineItemSchema>>
 
 interface LineItemFormProps {
   item?: QuoteItem
@@ -35,6 +36,7 @@ interface LineItemFormProps {
 }
 
 export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
+  const { t } = useTranslation()
   const [inputMode, setInputMode] = useState<'area' | 'dimensions'>('area')
   const [length, setLength] = useState('')
   const [width, setWidth] = useState('')
@@ -49,7 +51,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
     watch,
     setValue,
   } = useForm<LineItemFormData>({
-    resolver: zodResolver(lineItemSchema),
+    resolver: zodResolver(getLineItemSchema(t)),
     defaultValues: {
       item_name: item?.item_name || '',
       area: item?.area || 0,
@@ -113,7 +115,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label htmlFor="item_name">
-            Item Name <span className="text-destructive">*</span>
+            {t('quoteCreation.itemName')} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="item_name"
@@ -129,7 +131,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
         </div>
 
         <div>
-          <Label>Area Input Method</Label>
+          <Label>{t('quoteCreation.areaInputMethod')}</Label>
           <RadioGroup
             value={inputMode}
             onValueChange={(value) => {
@@ -143,11 +145,11 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="area" id="area" />
-              <Label htmlFor="area">Square Feet</Label>
+              <Label htmlFor="area">{t('quoteCreation.squareFeet')}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="dimensions" id="dimensions" />
-              <Label htmlFor="dimensions">Dimensions (L × W)</Label>
+              <Label htmlFor="dimensions">{t('quoteCreation.dimensions')}</Label>
             </div>
           </RadioGroup>
         </div>
@@ -155,7 +157,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
         {inputMode === 'area' ? (
           <div>
             <Label htmlFor="area">
-              Area (sq ft) <span className="text-destructive">*</span>
+              {t('quoteCreation.areaSqFt')} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="area"
@@ -173,7 +175,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="length">Length (ft)</Label>
+              <Label htmlFor="length">{t('quoteCreation.length')}</Label>
               <Input
                 id="length"
                 type="number"
@@ -185,7 +187,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="width">Width (ft)</Label>
+              <Label htmlFor="width">{t('quoteCreation.width')}</Label>
               <Input
                 id="width"
                 type="number"
@@ -198,7 +200,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
             </div>
             {area > 0 && (
               <div className="col-span-2 text-sm text-muted-foreground">
-                Calculated area: {area.toFixed(2)} sq ft
+                {t('quoteCreation.calculatedArea')}: {area.toFixed(2)} {t('quoteCreation.sqFt')}
               </div>
             )}
           </div>
@@ -206,7 +208,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
 
         <div>
           <Label htmlFor="price_per_sqft">
-            Price per Square Foot <span className="text-destructive">*</span>
+            {t('quoteCreation.pricePerSquareFoot')} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="price_per_sqft"
@@ -224,12 +226,12 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
 
         <div className="p-4 bg-muted rounded-md">
           <div className="flex justify-between mb-2">
-            <span>Line Total:</span>
+            <span>{t('quoteCreation.lineTotal')}:</span>
             <span className="font-bold">{formatCurrency(lineTotal)}</span>
           </div>
           {addonTotal > 0 && (
             <div className="text-sm text-muted-foreground">
-              Base: {formatCurrency(area * pricePerSqft)} + Add-ons:{' '}
+              {t('quoteCreation.base')}: {formatCurrency(area * pricePerSqft)} + {t('quote.addons')}:{' '}
               {formatCurrency(addonTotal)}
             </div>
           )}
@@ -243,13 +245,13 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
             className="w-full gap-2 border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-200"
           >
             <Plus className="h-4 w-4" />
-            Add Add-ons
+            {t('quoteCreation.addAddons')}
           </Button>
         </div>
 
         {addons.length > 0 && (
           <div className="space-y-2">
-            <Label>Current Add-ons</Label>
+            <Label>{t('quoteCreation.currentAddons')}</Label>
             <div className="flex flex-wrap gap-2">
               {addons.map((addon) => (
                 <div
@@ -275,7 +277,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="start_date">Start Date</Label>
+            <Label htmlFor="start_date">{t('quoteCreation.startDate')}</Label>
             <Input
               id="start_date"
               type="date"
@@ -283,7 +285,7 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
             />
           </div>
           <div>
-            <Label htmlFor="end_date">End Date</Label>
+            <Label htmlFor="end_date">{t('quoteCreation.endDate')}</Label>
             <Input
               id="end_date"
               type="date"
@@ -300,13 +302,13 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
             onClick={onCancel} 
             className="flex-1 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button 
             type="submit" 
             className="flex-1 bg-gradient-primary hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-200"
           >
-            {item ? 'Update Item' : 'Add Item'}
+            {item ? t('quoteCreation.editItem') : t('quoteCreation.addLineItem')}
           </Button>
         </div>
       </form>
@@ -318,9 +320,9 @@ export function LineItemForm({ item, onSave, onCancel }: LineItemFormProps) {
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] min-h-[200px] overflow-y-auto overscroll-contain">
           <DialogHeader className="pb-2">
-            <DialogTitle>Select Add-on</DialogTitle>
+            <DialogTitle>{t('quoteCreation.addAddons')}</DialogTitle>
             <DialogDescription>
-              Choose an add-on from the list or create a custom one.
+              {t('quoteCreation.addItemsDescription')}
             </DialogDescription>
           </DialogHeader>
           <AddonSelector

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
-import { Quote } from '@/types/quote'
-import { QuoteItem } from '@/types/quote-creation'
+import type { Quote } from '@/types/quote'
+import type { QuoteItem } from '@/types/quote-creation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
@@ -11,10 +11,13 @@ import { ArrowLeft, Edit, Trash2, Loader2, FileDown, Mail, MessageCircle } from 
 import { useToast } from '@/hooks/useToast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { StatusChangeDialog } from '@/components/quote/StatusChangeDialog'
-import { LanguageSelectorModal, Language } from '@/components/quote/LanguageSelectorModal'
+import { LanguageSelectorModal } from '@/components/quote/LanguageSelectorModal'
+import type { Language } from '@/components/quote/LanguageSelectorModal'
 import { SendEmailModal } from '@/components/quote/SendEmailModal'
 import { SendWhatsAppModal } from '@/components/quote/SendWhatsAppModal'
 import { logAuditEvent } from '@/utils/audit'
+import { LanguageSelector } from '@/components/ui/language-selector'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface QuoteItemWithId extends QuoteItem {
   id: string
@@ -24,6 +27,7 @@ export function ViewQuote() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [quote, setQuote] = useState<Quote | null>(null)
   const [items, setItems] = useState<QuoteItemWithId[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,8 +61,8 @@ export function ViewQuote() {
 
       if (!quoteData) {
         toast({
-          title: 'Error',
-          description: 'Quote not found',
+          title: t('common.error'),
+          description: t('quote.quoteNotFound'),
           variant: 'destructive',
         })
         navigate('/dashboard')
@@ -91,8 +95,8 @@ export function ViewQuote() {
     } catch (error: any) {
       console.error('Error fetching quote:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to load quote. Please try again.',
+        title: t('common.error'),
+        description: error.message || t('quote.failedToLoad'),
         variant: 'destructive',
       })
       navigate('/dashboard')
@@ -123,16 +127,16 @@ export function ViewQuote() {
       })
 
       toast({
-        title: 'Success',
-        description: 'Quote deleted successfully',
+        title: t('common.success'),
+        description: t('quote.quoteDeleted'),
       })
 
       navigate('/dashboard')
     } catch (error: any) {
       console.error('Error deleting quote:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete quote. Please try again.',
+        title: t('common.error'),
+        description: error.message || t('quote.failedToDelete'),
         variant: 'destructive',
       })
     } finally {
@@ -167,8 +171,8 @@ export function ViewQuote() {
         document.body.removeChild(link)
 
         toast({
-          title: 'Success',
-          description: 'PDF generated and downloaded successfully',
+          title: t('common.success'),
+          description: t('quote.pdfGeneratedSuccess'),
         })
       } else {
         throw new Error('No PDF URL returned')
@@ -176,8 +180,8 @@ export function ViewQuote() {
     } catch (error: any) {
       console.error('Error generating PDF:', error)
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to generate PDF. Please try again.',
+        title: t('common.error'),
+        description: error.message || t('quote.failedToGeneratePdf'),
         variant: 'destructive',
       })
     } finally {
@@ -199,6 +203,14 @@ export function ViewQuote() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            EaseQuote AI
+          </h1>
+          <LanguageSelector />
+        </div>
+      </header>
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl">
         {/* Header Section */}
         <div className="mb-6 space-y-4">
@@ -216,7 +228,7 @@ export function ViewQuote() {
                 <StatusBadge status={quote.status} />
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Created {formatDate(quote.created_at)}
+                {t('quote.created')} {formatDate(quote.created_at)}
               </p>
             </div>
           </div>
@@ -232,12 +244,12 @@ export function ViewQuote() {
               {generatingPdf ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-xs sm:text-sm">Generating...</span>
+                  <span className="text-xs sm:text-sm">{t('quote.generating')}</span>
                 </>
               ) : (
                 <>
                   <FileDown className="h-4 w-4 shrink-0" />
-                  <span className="text-xs sm:text-sm whitespace-nowrap">Download PDF</span>
+                  <span className="text-xs sm:text-sm whitespace-nowrap">{t('quote.downloadPdf')}</span>
                 </>
               )}
             </Button>
@@ -247,7 +259,7 @@ export function ViewQuote() {
               onClick={() => setShowEmailModal(true)}
             >
               <Mail className="h-4 w-4 shrink-0" />
-              <span className="text-xs sm:text-sm whitespace-nowrap">Send Email</span>
+              <span className="text-xs sm:text-sm whitespace-nowrap">{t('quote.sendEmail')}</span>
             </Button>
             <Button
               variant="outline"
@@ -255,14 +267,14 @@ export function ViewQuote() {
               onClick={() => setShowWhatsAppModal(true)}
             >
               <MessageCircle className="h-4 w-4 shrink-0" />
-              <span className="text-xs sm:text-sm whitespace-nowrap">WhatsApp</span>
+              <span className="text-xs sm:text-sm whitespace-nowrap">{t('quote.whatsapp')}</span>
             </Button>
             <Button
               variant="outline"
               className="gap-2 h-auto py-2.5 px-3 sm:px-4 border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-200"
               onClick={() => setShowStatusDialog(true)}
             >
-              <span className="text-xs sm:text-sm whitespace-nowrap">Change Status</span>
+              <span className="text-xs sm:text-sm whitespace-nowrap">{t('quote.changeStatus')}</span>
             </Button>
             <Link to={`/quotes/${quote.id}/edit`} className="contents">
               <Button 
@@ -270,7 +282,7 @@ export function ViewQuote() {
                 className="gap-2 h-auto py-2.5 px-3 sm:px-4 border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all duration-200 w-full sm:w-auto"
               >
                 <Edit className="h-4 w-4 shrink-0" />
-                <span className="text-xs sm:text-sm whitespace-nowrap">Edit</span>
+                <span className="text-xs sm:text-sm whitespace-nowrap">{t('common.edit')}</span>
               </Button>
             </Link>
             <Button
@@ -280,7 +292,7 @@ export function ViewQuote() {
             >
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></span>
               <Trash2 className="h-4 w-4 relative z-10 shrink-0 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="relative z-10 text-xs sm:text-sm whitespace-nowrap">Delete</span>
+              <span className="relative z-10 text-xs sm:text-sm whitespace-nowrap">{t('common.delete')}</span>
             </Button>
           </div>
         </div>
@@ -289,25 +301,25 @@ export function ViewQuote() {
           {/* Customer Information */}
           <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up">
             <CardHeader>
-              <CardTitle>Customer Information</CardTitle>
+              <CardTitle>{t('quoteCreation.customerInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div>
-                <span className="font-medium">Name:</span> {quote.customer_name}
+                <span className="font-medium">{t('quoteCreation.name')}:</span> {quote.customer_name}
               </div>
               {quote.customer_phone && (
                 <div>
-                  <span className="font-medium">Phone:</span> {quote.customer_phone}
+                  <span className="font-medium">{t('quoteCreation.phone')}:</span> {quote.customer_phone}
                 </div>
               )}
               {quote.customer_email && (
                 <div>
-                  <span className="font-medium">Email:</span> {quote.customer_email}
+                  <span className="font-medium">{t('quoteCreation.email')}:</span> {quote.customer_email}
                 </div>
               )}
               {quote.customer_address && (
                 <div>
-                  <span className="font-medium">Address:</span>{' '}
+                  <span className="font-medium">{t('quoteCreation.address')}:</span>{' '}
                   {[
                     quote.customer_address,
                     quote.customer_city,
@@ -324,11 +336,11 @@ export function ViewQuote() {
           {/* Line Items */}
           <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up stagger-1">
             <CardHeader>
-              <CardTitle>Line Items ({items.length})</CardTitle>
+              <CardTitle>{t('quoteCreation.lineItems')} ({items.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {items.length === 0 ? (
-                <p className="text-muted-foreground">No items in this quote.</p>
+                <p className="text-muted-foreground">{t('quote.noItems')}</p>
               ) : (
                 items.map((item) => (
                   <div key={item.id} className="border-b pb-4 last:border-b-0">
@@ -336,14 +348,13 @@ export function ViewQuote() {
                       <div>
                         <h3 className="font-semibold">{item.item_name}</h3>
                         <div className="text-sm text-muted-foreground">
-                          {item.area.toFixed(2)} sq ft × {formatCurrency(item.price_per_sqft)}/sq
-                          ft
+                          {item.area.toFixed(2)} {t('quoteCreation.sqFt')} × {formatCurrency(item.price_per_sqft)}{t('quoteCreation.perSqFt')}
                         </div>
                         {(item.start_date || item.end_date) && (
                           <div className="text-sm text-muted-foreground mt-1">
-                            {item.start_date && `Start: ${formatDate(item.start_date)}`}
+                            {item.start_date && `${t('quote.start')}: ${formatDate(item.start_date)}`}
                             {item.start_date && item.end_date && ' • '}
-                            {item.end_date && `End: ${formatDate(item.end_date)}`}
+                            {item.end_date && `${t('quote.end')}: ${formatDate(item.end_date)}`}
                           </div>
                         )}
                       </div>
@@ -351,7 +362,7 @@ export function ViewQuote() {
                     </div>
                     {item.addons.length > 0 && (
                       <div className="ml-4 mt-2 text-sm">
-                        <div className="font-medium mb-1">Add-ons:</div>
+                        <div className="font-medium mb-1">{t('quote.addons')}:</div>
                         {item.addons.map((addon) => (
                           <div key={addon.id} className="text-muted-foreground">
                             • {addon.name} - {formatCurrency(addon.price)}
@@ -366,34 +377,25 @@ export function ViewQuote() {
           </Card>
 
           {/* Additional Details */}
-          {(quote.customer_provides_materials || quote.payment_method || quote.notes) && (
+          {(quote.customer_provides_materials || quote.notes) && (
             <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up stagger-2">
               <CardHeader>
-                <CardTitle>Additional Details</CardTitle>
+                <CardTitle>{t('quote.additionalDetails')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div>
-                  <span className="font-medium">Customer Provides Materials:</span>{' '}
-                  {quote.customer_provides_materials ? 'Yes' : 'No'}
+                  <span className="font-medium">{t('quoteCreation.customerProvidesMaterials')}:</span>{' '}
+                  {quote.customer_provides_materials ? t('quote.yes') : t('quote.no')}
                 </div>
                 {!quote.customer_provides_materials && quote.material_cost > 0 && (
                   <div>
-                    <span className="font-medium">Material Cost:</span>{' '}
+                    <span className="font-medium">{t('quote.materialCost')}:</span>{' '}
                     {formatCurrency(quote.material_cost)}
-                  </div>
-                )}
-                {quote.payment_method && (
-                  <div>
-                    <span className="font-medium">Payment Method:</span>{' '}
-                    {quote.payment_method
-                      .split('_')
-                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join(' ')}
                   </div>
                 )}
                 {quote.notes && (
                   <div>
-                    <span className="font-medium">Notes:</span>
+                    <span className="font-medium">{t('quote.notes')}:</span>
                     <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
                       {quote.notes}
                     </p>
@@ -406,21 +408,21 @@ export function ViewQuote() {
           {/* Summary */}
           <Card className="shadow-elegant-lg border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50 backdrop-blur-sm animate-slide-in-up stagger-3">
             <CardHeader>
-              <CardTitle className="text-xl">Summary</CardTitle>
+              <CardTitle className="text-xl">{t('quote.summary')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal:</span>
+                <span>{t('quote.subtotal')}:</span>
                 <span>{formatCurrency(quote.subtotal)}</span>
               </div>
               {!quote.customer_provides_materials && quote.material_cost > 0 && (
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Material Cost:</span>
+                  <span>{t('quote.materialCost')}:</span>
                   <span>+{formatCurrency(quote.material_cost)}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-bold pt-3 border-t border-gray-200">
-                <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Total:</span>
+                <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{t('quote.total')}:</span>
                 <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{formatCurrency(quote.total_amount)}</span>
               </div>
             </CardContent>
@@ -444,8 +446,8 @@ export function ViewQuote() {
         customerEmail={quote.customer_email}
         onEmailSent={() => {
           toast({
-            title: 'Success',
-            description: 'Email sent successfully!',
+            title: t('quote.sendEmailModal.emailSentTitle'),
+            description: t('quote.sendEmailModal.emailSentSuccess'),
           })
         }}
       />
@@ -460,8 +462,8 @@ export function ViewQuote() {
         totalAmount={quote.total_amount}
         onWhatsAppOpened={() => {
           toast({
-            title: 'Success',
-            description: 'WhatsApp opened! Complete sending the message.',
+            title: t('quote.sendWhatsAppModal.whatsAppOpenedTitle'),
+            description: t('quote.sendWhatsAppModal.whatsAppOpenedSuccess'),
           })
         }}
       />
@@ -478,10 +480,10 @@ export function ViewQuote() {
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Quote"
-        description={`Are you sure you want to delete quote ${quote.quote_number}? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('quote.deleteQuoteDialog.title')}
+        description={t('quote.deleteQuoteDialog.description', { number: quote.quote_number })}
+        confirmText={t('quote.deleteQuoteDialog.delete')}
+        cancelText={t('quote.deleteQuoteDialog.cancel')}
         variant="destructive"
         onConfirm={handleDelete}
         loading={deleting}

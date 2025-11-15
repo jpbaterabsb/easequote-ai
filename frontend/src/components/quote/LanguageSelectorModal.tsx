@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export type Language = 'en' | 'es' | 'pt'
 
@@ -16,12 +17,6 @@ interface LanguageOption {
   name: string
   flag: string
 }
-
-const languages: LanguageOption[] = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'pt', name: 'Português', flag: '🇧🇷' },
-]
 
 interface LanguageSelectorModalProps {
   open: boolean
@@ -36,13 +31,21 @@ export function LanguageSelectorModal({
   onLanguageSelect,
   loading = false,
 }: LanguageSelectorModalProps) {
+  const { t } = useTranslation()
+
+  const languages: LanguageOption[] = [
+    { code: 'en', name: t('quote.languageSelectorModal.english'), flag: '🇺🇸' },
+    { code: 'es', name: t('quote.languageSelectorModal.spanish'), flag: '🇪🇸' },
+    { code: 'pt', name: t('quote.languageSelectorModal.portuguese'), flag: '🇧🇷' },
+  ]
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Select Language for PDF</DialogTitle>
+          <DialogTitle>{t('quote.languageSelectorModal.title')}</DialogTitle>
           <DialogDescription>
-            Choose the language for your quote PDF. The content will be automatically translated.
+            {t('quote.languageSelectorModal.description')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-2 py-4">
@@ -66,7 +69,7 @@ export function LanguageSelectorModal({
             disabled={loading}
             className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
         </DialogFooter>
         {loading && (

@@ -16,6 +16,7 @@ import { LanguageSelectorModal, Language } from './LanguageSelectorModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import { formatCurrency } from '@/utils/format'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface SendWhatsAppModalProps {
   open: boolean
@@ -82,6 +83,7 @@ export function SendWhatsAppModal({
   onWhatsAppOpened,
 }: SendWhatsAppModalProps) {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [phone, setPhone] = useState(customerPhone || '')
   const [message, setMessage] = useState('')
   const [language, setLanguage] = useState<Language>('en')
@@ -117,6 +119,19 @@ export function SendWhatsAppModal({
   const handleLanguageSelect = (selectedLanguage: Language) => {
     setLanguage(selectedLanguage)
     setShowLanguageModal(false)
+  }
+
+  const getLanguageDisplayName = (lang: Language): string => {
+    switch (lang) {
+      case 'en':
+        return `🇺🇸 ${t('quote.sendWhatsAppModal.english')}`
+      case 'es':
+        return `🇪🇸 ${t('quote.sendWhatsAppModal.spanish')}`
+      case 'pt':
+        return `🇧🇷 ${t('quote.sendWhatsAppModal.portuguese')}`
+      default:
+        return `🇺🇸 ${t('quote.sendWhatsAppModal.english')}`
+    }
   }
 
   const handleOpenWhatsApp = async () => {
@@ -175,33 +190,32 @@ export function SendWhatsAppModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
-              Send Quote via WhatsApp
+              {t('quote.sendWhatsAppModal.title')}
             </DialogTitle>
             <DialogDescription>
-              Generate a WhatsApp link with your quote. The message will open in WhatsApp Web or
-              your WhatsApp app.
+              {t('quote.sendWhatsAppModal.description')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="whatsapp-phone">Phone Number</Label>
+              <Label htmlFor="whatsapp-phone">{t('quote.sendWhatsAppModal.phoneNumber')}</Label>
               <Input
                 id="whatsapp-phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 (555) 123-4567"
+                placeholder={t('quote.sendWhatsAppModal.phoneNumberPlaceholder')}
                 disabled={generating}
               />
               <p className="text-xs text-muted-foreground">
-                Include country code (e.g., +1 for US, +55 for Brazil)
+                {t('quote.sendWhatsAppModal.phoneNumberHelper')}
               </p>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="whatsapp-language">Language</Label>
+                <Label htmlFor="whatsapp-language">{t('quote.sendWhatsAppModal.language')}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -209,37 +223,33 @@ export function SendWhatsAppModal({
                   onClick={() => setShowLanguageModal(true)}
                   disabled={generating}
                 >
-                  {language === 'en' && '🇺🇸 English'}
-                  {language === 'es' && '🇪🇸 Español'}
-                  {language === 'pt' && '🇧🇷 Português'}
+                  {getLanguageDisplayName(language)}
                 </Button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="whatsapp-message">Message Preview</Label>
+              <Label htmlFor="whatsapp-message">{t('quote.sendWhatsAppModal.messagePreview')}</Label>
               <Textarea
                 id="whatsapp-message"
-                value={message || 'Generating message...'}
+                value={message || t('quote.sendWhatsAppModal.generatingMessage')}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Message will appear here"
+                placeholder={t('quote.sendWhatsAppModal.messagePlaceholder')}
                 rows={10}
                 disabled={generating}
                 className="font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                You can edit this message before opening WhatsApp. The PDF link will be included
-                automatically.
+                {t('quote.sendWhatsAppModal.messageHelper')}
               </p>
             </div>
 
             <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
               <MessageCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium">How it works</p>
+                <p className="text-sm font-medium">{t('quote.sendWhatsAppModal.howItWorks')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Clicking "Open WhatsApp" will generate a PDF quote and open WhatsApp with the
-                  message ready. You can edit the message before sending.
+                  {t('quote.sendWhatsAppModal.howItWorksDescription')}
                 </p>
               </div>
             </div>
@@ -252,18 +262,18 @@ export function SendWhatsAppModal({
               disabled={generating}
               className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleOpenWhatsApp} disabled={generating || !phone.trim()}>
               {generating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
+                  {t('quote.sendWhatsAppModal.generating')}
                 </>
               ) : (
                 <>
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Open WhatsApp
+                  {t('quote.sendWhatsAppModal.openWhatsApp')}
                 </>
               )}
             </Button>

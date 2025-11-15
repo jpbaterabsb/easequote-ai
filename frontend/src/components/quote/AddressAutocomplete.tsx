@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, MapPin } from 'lucide-react'
 import { setKey, fromAddress } from 'react-geocode'
 import type { CustomerInfo } from '@/types/quote-creation'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface AddressAutocompleteProps {
   value: Partial<CustomerInfo>
@@ -18,6 +19,7 @@ if (apiKey) {
 }
 
 export function AddressAutocomplete({ value, onChange, error }: AddressAutocompleteProps) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState(value.customer_address || '')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -129,7 +131,7 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="address">Job Address (Optional)</Label>
+      <Label htmlFor="address">{t('quoteCreation.jobAddress')}</Label>
       <div className="relative">
         <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
@@ -137,7 +139,7 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
           type="text"
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
-          placeholder="Enter job address..."
+          placeholder={t('quoteCreation.enterJobAddress')}
           className="pl-9"
           onBlur={() => {
             // Keep suggestions visible briefly on blur
@@ -175,14 +177,14 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
             onClick={handleManualEntry}
             className="w-full text-left px-4 py-3 hover:bg-primary/5 focus:bg-primary/10 focus:outline-none transition-colors duration-150 text-sm text-gray-600 border-t border-gray-100 rounded-b-lg"
           >
-            Use address as entered
+            {t('quoteCreation.useAddressAsEntered')}
           </button>
         </div>
       )}
 
       {useManualEntry && (
         <div className="text-sm text-muted-foreground">
-          Entering address manually. You can edit city, state, and zip below.
+          {t('quoteCreation.enteringManually')}
         </div>
       )}
 
@@ -190,7 +192,7 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <Label htmlFor="city">City</Label>
+          <Label htmlFor="city">{t('quoteCreation.city')}</Label>
           <Input
             id="city"
             type="text"
@@ -198,11 +200,11 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
             onChange={(e) =>
               onChange({ ...value, customer_city: e.target.value })
             }
-            placeholder="City"
+            placeholder={t('quoteCreation.city')}
           />
         </div>
         <div>
-          <Label htmlFor="state">State</Label>
+          <Label htmlFor="state">{t('quoteCreation.state')}</Label>
           <Input
             id="state"
             type="text"
@@ -210,11 +212,11 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
             onChange={(e) =>
               onChange({ ...value, customer_state: e.target.value })
             }
-            placeholder="State"
+            placeholder={t('quoteCreation.state')}
           />
         </div>
         <div>
-          <Label htmlFor="zip">ZIP Code</Label>
+          <Label htmlFor="zip">{t('quoteCreation.zipCode')}</Label>
           <Input
             id="zip"
             type="text"
@@ -222,7 +224,7 @@ export function AddressAutocomplete({ value, onChange, error }: AddressAutocompl
             onChange={(e) =>
               onChange({ ...value, customer_zip: e.target.value })
             }
-            placeholder="ZIP"
+            placeholder={t('quoteCreation.zip')}
           />
         </div>
       </div>

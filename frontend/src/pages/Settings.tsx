@@ -16,6 +16,8 @@ import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthInd
 import { ImageUpload } from '@/components/settings/ImageUpload'
 import { useToast } from '@/hooks/useToast'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { LanguageSelector } from '@/components/ui/language-selector'
+import { useTranslation } from '@/hooks/useTranslation'
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
@@ -39,6 +41,7 @@ type PasswordFormData = z.infer<typeof passwordSchema>
 function SettingsContent() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
@@ -254,9 +257,12 @@ function SettingsContent() {
         <header className="bg-white border-b">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <h1 className="text-2xl font-bold">EaseQuote AI</h1>
-            <Button variant="outline" onClick={() => window.history.back()}>
-              Back
-            </Button>
+            <div className="flex items-center gap-4">
+              <LanguageSelector />
+              <Button variant="outline" onClick={() => window.history.back()}>
+                {t('common.back')}
+              </Button>
+            </div>
           </div>
         </header>
         <main className="container mx-auto px-4 py-8 max-w-4xl">

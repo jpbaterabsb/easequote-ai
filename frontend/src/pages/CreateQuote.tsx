@@ -20,18 +20,21 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
+import { LanguageSelector } from '@/components/ui/language-selector'
+import { useTranslation } from '@/hooks/useTranslation'
 
-const STEPS = [
-  { number: 1, title: 'Customer Info' },
-  { number: 2, title: 'Line Items' },
-  { number: 3, title: 'Materials & Notes' },
-  { number: 4, title: 'Review' },
+const getSteps = (t: (key: string) => string) => [
+  { number: 1, title: t('quoteCreation.customerInfo') },
+  { number: 2, title: t('quoteCreation.lineItems') },
+  { number: 3, title: t('quoteCreation.materialsNotes') },
+  { number: 4, title: t('quoteCreation.review') },
 ]
 
 export function CreateQuote() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const {
     currentStep,
     setCurrentStep,
@@ -40,6 +43,7 @@ export function CreateQuote() {
   } = useQuoteCreationStore()
   const [saving, setSaving] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const STEPS = getSteps(t)
 
   // Auto-save draft every 30 seconds
   useEffect(() => {
@@ -170,11 +174,19 @@ export function CreateQuote() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            EaseQuote AI
+          </h1>
+          <LanguageSelector />
+        </div>
+      </header>
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl">
         <div className="mb-4 sm:mb-6 animate-slide-in-down">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Create New Quote
+              {t('quote.create')}
             </h1>
             <Button 
               variant="ghost" 
@@ -183,7 +195,7 @@ export function CreateQuote() {
               className="hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
             >
               <X className="h-4 w-4 mr-2" />
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
 
@@ -192,7 +204,6 @@ export function CreateQuote() {
             {STEPS.map((step, index) => {
               const isCompleted = currentStep > step.number
               const isActive = currentStep === step.number
-              const isPending = currentStep < step.number
               
               return (
                 <Fragment key={step.number}>
@@ -258,9 +269,9 @@ export function CreateQuote() {
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel Quote Creation?</DialogTitle>
+            <DialogTitle>{t('quote.cancelQuoteCreation')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel? All unsaved changes will be lost.
+              {t('quote.cancelConfirm')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-3">
@@ -269,14 +280,14 @@ export function CreateQuote() {
               onClick={() => setShowCancelDialog(false)}
               className="w-full sm:w-auto border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
             >
-              Continue Editing
+              {t('quote.continueEditing')}
             </Button>
             <Button
               variant="destructive"
               onClick={confirmCancel}
               className="w-full sm:w-auto bg-gradient-to-r from-red-500 via-red-600 to-red-500 hover:from-red-600 hover:via-red-700 hover:to-red-600 shadow-md hover:shadow-lg transition-all duration-200"
             >
-              Discard Changes
+              {t('quote.discardChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>

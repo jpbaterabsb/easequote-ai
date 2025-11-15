@@ -12,9 +12,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2, Mail, FileText } from 'lucide-react'
-import { LanguageSelectorModal, Language } from './LanguageSelectorModal'
+import { LanguageSelectorModal } from './LanguageSelectorModal'
+import type { Language } from './LanguageSelectorModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface SendEmailModalProps {
   open: boolean
@@ -75,6 +77,7 @@ export function SendEmailModal({
   onEmailSent,
 }: SendEmailModalProps) {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [recipientEmail, setRecipientEmail] = useState(customerEmail || '')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
@@ -118,6 +121,32 @@ export function SendEmailModal({
     const template = emailTemplates[language]
     setSubject(template.subject(quoteNumber, businessName))
     setBody(template.body(customerName, businessName, profile?.phone))
+  }
+
+  const getLanguageName = (lang: Language): string => {
+    switch (lang) {
+      case 'en':
+        return t('quote.sendEmailModal.english')
+      case 'es':
+        return t('quote.sendEmailModal.spanish')
+      case 'pt':
+        return t('quote.sendEmailModal.portuguese')
+      default:
+        return t('quote.sendEmailModal.english')
+    }
+  }
+
+  const getLanguageDisplayName = (lang: Language): string => {
+    switch (lang) {
+      case 'en':
+        return `🇺🇸 ${t('quote.sendEmailModal.english')}`
+      case 'es':
+        return `🇪🇸 ${t('quote.sendEmailModal.spanish')}`
+      case 'pt':
+        return `🇧🇷 ${t('quote.sendEmailModal.portuguese')}`
+      default:
+        return `🇺🇸 ${t('quote.sendEmailModal.english')}`
+    }
   }
 
   const handleLanguageSelect = (selectedLanguage: Language) => {
@@ -170,29 +199,29 @@ export function SendEmailModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Send Quote via Email
+              {t('quote.sendEmailModal.title')}
             </DialogTitle>
             <DialogDescription>
-              Send this quote to your customer via email with PDF attachment.
+              {t('quote.sendEmailModal.description')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="recipient-email">To</Label>
+              <Label htmlFor="recipient-email">{t('quote.sendEmailModal.to')}</Label>
               <Input
                 id="recipient-email"
                 type="email"
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
-                placeholder="customer@example.com"
+                placeholder={t('quote.sendEmailModal.emailPlaceholder')}
                 disabled={sending}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="language">Language</Label>
+                <Label htmlFor="language">{t('quote.sendEmailModal.language')}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -200,31 +229,29 @@ export function SendEmailModal({
                   onClick={() => setShowLanguageModal(true)}
                   disabled={sending}
                 >
-                  {language === 'en' && '🇺🇸 English'}
-                  {language === 'es' && '🇪🇸 Español'}
-                  {language === 'pt' && '🇧🇷 Português'}
+                  {getLanguageDisplayName(language)}
                 </Button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
+              <Label htmlFor="subject">{t('quote.sendEmailModal.subject')}</Label>
               <Input
                 id="subject"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="Email subject"
+                placeholder={t('quote.sendEmailModal.subjectPlaceholder')}
                 disabled={sending}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="body">Message</Label>
+              <Label htmlFor="body">{t('quote.sendEmailModal.message')}</Label>
               <Textarea
                 id="body"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="Email body"
+                placeholder={t('quote.sendEmailModal.messagePlaceholder')}
                 rows={8}
                 disabled={sending}
                 className="font-mono text-sm"
@@ -234,9 +261,12 @@ export function SendEmailModal({
             <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
               <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium">PDF Attachment</p>
+                <p className="text-sm font-medium">{t('quote.sendEmailModal.pdfAttachment')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Quote #{quoteNumber} will be attached as a PDF in {language === 'en' ? 'English' : language === 'es' ? 'Spanish' : 'Portuguese'}
+                  {t('quote.sendEmailModal.pdfAttachmentDescription', {
+                    number: quoteNumber,
+                    language: getLanguageName(language),
+                  })}
                 </p>
               </div>
             </div>
@@ -249,18 +279,18 @@ export function SendEmailModal({
               disabled={sending}
               className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSend} disabled={sending || !recipientEmail.trim()}>
               {sending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
+                  {t('quote.sendEmailModal.sending')}
                 </>
               ) : (
                 <>
                   <Mail className="mr-2 h-4 w-4" />
-                  Send Email
+                  {t('quote.sendEmailModal.sendEmail')}
                 </>
               )}
             </Button>

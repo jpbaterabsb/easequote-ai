@@ -20,6 +20,7 @@ import { QuoteStatus } from '@/types/quote'
 import { logAuditEvent } from '@/utils/audit'
 import { useToast } from '@/hooks/useToast'
 import { supabase } from '@/lib/supabase/client'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface StatusChangeDialogProps {
   open: boolean
@@ -30,15 +31,6 @@ interface StatusChangeDialogProps {
   onStatusChanged: () => void
 }
 
-const STATUS_OPTIONS: { value: QuoteStatus; label: string }[] = [
-  { value: 'created', label: 'Created' },
-  { value: 'sent', label: 'Sent' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'completed', label: 'Completed' },
-]
-
 export function StatusChangeDialog({
   open,
   onOpenChange,
@@ -47,9 +39,19 @@ export function StatusChangeDialog({
   quoteNumber,
   onStatusChanged,
 }: StatusChangeDialogProps) {
+  const { t } = useTranslation()
   const [newStatus, setNewStatus] = useState<QuoteStatus>(currentStatus)
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
+
+  const STATUS_OPTIONS: { value: QuoteStatus; label: string }[] = [
+    { value: 'created', label: t('quote.statusChangeDialog.statusCreated') },
+    { value: 'sent', label: t('quote.statusChangeDialog.statusSent') },
+    { value: 'accepted', label: t('quote.statusChangeDialog.statusAccepted') },
+    { value: 'rejected', label: t('quote.statusChangeDialog.statusRejected') },
+    { value: 'in_progress', label: t('quote.statusChangeDialog.statusInProgress') },
+    { value: 'completed', label: t('quote.statusChangeDialog.statusCompleted') },
+  ]
 
   // Reset status when dialog opens or currentStatus changes
   useEffect(() => {
@@ -102,22 +104,47 @@ export function StatusChangeDialog({
     }
   }
 
+  const getStatusLabel = (status: QuoteStatus): string => {
+    switch (status) {
+      case 'created':
+        return t('quote.statusChangeDialog.statusCreated')
+      case 'sent':
+        return t('quote.statusChangeDialog.statusSent')
+      case 'accepted':
+        return t('quote.statusChangeDialog.statusAccepted')
+      case 'rejected':
+        return t('quote.statusChangeDialog.statusRejected')
+      case 'in_progress':
+        return t('quote.statusChangeDialog.statusInProgress')
+      case 'completed':
+        return t('quote.statusChangeDialog.statusCompleted')
+      default:
+        return status
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change Quote Status</DialogTitle>
+          <DialogTitle>{t('quote.statusChangeDialog.title')}</DialogTitle>
           <DialogDescription>
-            Update the status for quote {quoteNumber}
+            {t('quote.statusChangeDialog.description', { number: quoteNumber })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
-            <label className="text-sm font-medium mb-2 block">Current Status</label>
-            <div className="text-sm text-muted-foreground capitalize">{currentStatus}</div>
+            <label className="text-sm font-medium mb-2 block">
+              {t('quote.statusChangeDialog.currentStatus')}
+            </label>
+            <div className="text-sm text-muted-foreground">
+              {getStatusLabel(currentStatus)}
+            </div>
           </div>
           <div>
-            <label className="text-sm font-medium mb-2 block">New Status</label>
+            <label className="text-sm font-medium mb-2 block">
+              {t('quote.statusChangeDialog.newStatus')}
+            </label>
             <Select value={newStatus} onValueChange={(value) => setNewStatus(value as QuoteStatus)}>
               <SelectTrigger>
                 <SelectValue />
@@ -139,16 +166,16 @@ export function StatusChangeDialog({
             disabled={saving}
             className="border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving || newStatus === currentStatus}>
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
+                {t('quote.statusChangeDialog.updating')}
               </>
             ) : (
-              'Update Status'
+              t('quote.statusChangeDialog.updateStatus')
             )}
           </Button>
         </DialogFooter>

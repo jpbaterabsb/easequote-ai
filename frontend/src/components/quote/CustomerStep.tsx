@@ -8,18 +8,19 @@ import { AddressAutocomplete } from './AddressAutocomplete'
 import { CustomerAutocomplete } from './CustomerAutocomplete'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import type { CustomerInfo } from '@/types/quote-creation'
+import { useTranslation } from '@/hooks/useTranslation'
 
-const customerSchema = z.object({
-  customer_name: z.string().min(1, 'Customer name is required'),
+const getCustomerSchema = (t: (key: string) => string) => z.object({
+  customer_name: z.string().min(1, t('quoteCreation.customerNameRequired')),
   customer_phone: z.string().optional(),
-  customer_email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  customer_email: z.string().email(t('quoteCreation.invalidEmail')).optional().or(z.literal('')),
   customer_address: z.string().optional(),
   customer_city: z.string().optional(),
   customer_state: z.string().optional(),
   customer_zip: z.string().optional(),
 })
 
-type CustomerFormData = z.infer<typeof customerSchema>
+type CustomerFormData = z.infer<ReturnType<typeof getCustomerSchema>>
 
 interface CustomerStepProps {
   onNext: () => void
@@ -27,6 +28,7 @@ interface CustomerStepProps {
 
 export function CustomerStep({ onNext }: CustomerStepProps) {
   const { formData, updateCustomer } = useQuoteCreationStore()
+  const { t } = useTranslation()
 
   const {
     register,
@@ -35,7 +37,7 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
     setValue,
     watch,
   } = useForm<CustomerFormData>({
-    resolver: zodResolver(customerSchema),
+    resolver: zodResolver(getCustomerSchema(t)),
     defaultValues: {
       customer_name: formData.customer.customer_name,
       customer_phone: formData.customer.customer_phone || '',
@@ -91,16 +93,16 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Customer Information</h2>
+        <h2 className="text-2xl font-bold mb-2">{t('quoteCreation.customerInformation')}</h2>
         <p className="text-muted-foreground">
-          Enter the customer details for this quote.
+          {t('quoteCreation.enterCustomerDetails')}
         </p>
       </div>
 
       <div className="space-y-4">
         <div>
           <Label htmlFor="customer_name">
-            Customer Name <span className="text-destructive">*</span>
+            {t('quoteCreation.customerName')} <span className="text-destructive">*</span>
           </Label>
           <CustomerAutocomplete
             id="customer_name"
@@ -108,12 +110,12 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
             onChange={handleCustomerNameChange}
             onSelectCustomer={handleSelectCustomer}
             error={errors.customer_name?.message}
-            placeholder="Start typing to search customers..."
+            placeholder={t('quoteCreation.startTypingToSearch')}
           />
         </div>
 
         <div>
-          <Label htmlFor="customer_phone">Phone Number</Label>
+          <Label htmlFor="customer_phone">{t('quoteCreation.phoneNumber')}</Label>
           <Input
             id="customer_phone"
             {...register('customer_phone')}
@@ -126,7 +128,7 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
         </div>
 
         <div>
-          <Label htmlFor="customer_email">Email</Label>
+          <Label htmlFor="customer_email">{t('quoteCreation.email')}</Label>
           <Input
             id="customer_email"
             type="email"
@@ -157,7 +159,7 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
           type="submit"
           className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
         >
-          Next: Add Line Items
+          {t('quoteCreation.nextAddLineItems')}
         </button>
       </div>
     </form>

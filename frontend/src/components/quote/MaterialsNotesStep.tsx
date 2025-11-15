@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { formatCurrency } from '@/utils/format'
 import type { QuoteFormData } from '@/types/quote-creation'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface MaterialsNotesStepProps {
   onNext: () => void
@@ -16,6 +17,7 @@ interface MaterialsNotesStepProps {
 
 export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) {
   const { formData, setMaterials, setPaymentMethod, setNotes } = useQuoteCreationStore()
+  const { t } = useTranslation()
   const [materialCost, setMaterialCost] = useState(
     formData.material_cost.toString()
   )
@@ -34,9 +36,9 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Materials & Notes</h2>
+        <h2 className="text-2xl font-bold mb-2">{t('quoteCreation.materialsNotes')}</h2>
         <p className="text-muted-foreground">
-          Specify material details and add any additional notes.
+          {t('quoteCreation.materialsNotesDescription')}
         </p>
       </div>
 
@@ -52,13 +54,13 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
             }}
           />
           <Label htmlFor="provides_materials" className="cursor-pointer">
-            Customer Provides Materials?
+            {t('quoteCreation.customerProvidesMaterials')}
           </Label>
         </div>
 
         {!formData.customer_provides_materials && (
           <div>
-            <Label htmlFor="material_cost">Material Cost (USD)</Label>
+            <Label htmlFor="material_cost">{t('quoteCreation.materialCostUSD')}</Label>
             <Input
               id="material_cost"
               type="number"
@@ -77,13 +79,13 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
               placeholder="0.00"
             />
             <p className="text-sm text-muted-foreground mt-1">
-              This cost will be added to the total.
+              {t('quoteCreation.materialCostAdded')}
             </p>
           </div>
         )}
 
         <div>
-          <Label>Payment Method</Label>
+          <Label>{t('quoteCreation.paymentMethod')}</Label>
           <RadioGroup
             value={formData.payment_method || ''}
             onValueChange={(value) =>
@@ -93,40 +95,40 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="credit_card" id="credit_card" />
-              <Label htmlFor="credit_card">Credit Card</Label>
+              <Label htmlFor="credit_card">{t('quoteCreation.creditCard')}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="debit_card" id="debit_card" />
-              <Label htmlFor="debit_card">Debit Card</Label>
+              <Label htmlFor="debit_card">{t('quoteCreation.debitCard')}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="cash" id="cash" />
-              <Label htmlFor="cash">Cash</Label>
+              <Label htmlFor="cash">{t('quoteCreation.cash')}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="check" id="check" />
-              <Label htmlFor="check">Check</Label>
+              <Label htmlFor="check">{t('quoteCreation.check')}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="zelle" id="zelle" />
-              <Label htmlFor="zelle">Zelle/Venmo</Label>
+              <Label htmlFor="zelle">{t('quoteCreation.zelleVenmo')}</Label>
             </div>
           </RadioGroup>
         </div>
 
         <div>
-          <Label htmlFor="notes">Additional Notes (Optional)</Label>
+          <Label htmlFor="notes">{t('quoteCreation.additionalNotes')}</Label>
           <Textarea
             id="notes"
             value={formData.notes}
             onChange={(e) => handleNotesChange(e.target.value)}
-            placeholder="Add any additional notes or special instructions..."
+            placeholder={t('quoteCreation.addNotesPlaceholder')}
             rows={6}
             maxLength={500}
           />
           <div className="flex justify-between mt-1">
             <p className="text-sm text-muted-foreground">
-              Maximum 500 characters
+              {t('quoteCreation.maxCharacters')}
             </p>
             <p className="text-sm text-muted-foreground">
               {formData.notes.length}/500
@@ -137,26 +139,26 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
 
       <div className="p-4 bg-muted rounded-md space-y-2">
         <div className="flex justify-between">
-          <span>Subtotal:</span>
+          <span>{t('quote.subtotal')}:</span>
           <span>{formatCurrency(subtotal)}</span>
         </div>
         {!formData.customer_provides_materials && formData.material_cost > 0 && (
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Material Cost:</span>
+            <span>{t('quote.materialCost')}:</span>
             <span>+{formatCurrency(formData.material_cost)}</span>
           </div>
         )}
         <div className="flex justify-between text-lg font-bold pt-2 border-t">
-          <span>Total:</span>
+          <span>{t('quote.total')}:</span>
           <span>{formatCurrency(total)}</span>
         </div>
       </div>
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
-          Back
+          {t('common.back')}
         </Button>
-        <Button onClick={onNext}>Review & Save</Button>
+        <Button onClick={onNext}>{t('quoteCreation.reviewSave')}</Button>
       </div>
     </div>
   )

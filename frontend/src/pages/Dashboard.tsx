@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Settings, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
-import { Quote, QuoteFilters, SortConfig } from '@/types/quote'
+import type { Quote, QuoteFilters, SortConfig } from '@/types/quote'
 import { EmptyState } from '@/components/dashboard/EmptyState'
 import { QuoteCard } from '@/components/dashboard/QuoteCard'
 import { QuoteFilters as QuoteFiltersComponent } from '@/components/dashboard/QuoteFilters'
@@ -19,12 +19,15 @@ import {
 } from '@/components/ui/select'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useToast } from '@/hooks/useToast'
+import { LanguageSelector } from '@/components/ui/language-selector'
+import { useTranslation } from '@/hooks/useTranslation'
 
 const ITEMS_PER_PAGE = 20
 
 export function Dashboard() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
@@ -119,8 +122,8 @@ export function Dashboard() {
     } catch (error) {
       console.error('Error fetching quotes:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to load quotes. Please try again.',
+        title: t('common.error'),
+        description: t('quote.failedToLoad'),
         variant: 'destructive',
       })
     } finally {
@@ -154,8 +157,8 @@ export function Dashboard() {
       })
 
       toast({
-        title: 'Success',
-        description: 'Quote deleted successfully',
+        title: t('common.success'),
+        description: t('quote.quoteDeleted'),
       })
 
       // Refresh quotes
@@ -163,8 +166,8 @@ export function Dashboard() {
     } catch (error) {
       console.error('Error deleting quote:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to delete quote. Please try again.',
+        title: t('common.error'),
+        description: t('quote.failedToDelete'),
         variant: 'destructive',
       })
     }
@@ -197,6 +200,7 @@ export function Dashboard() {
             EaseQuote AI
           </h1>
           <div className="flex items-center gap-4">
+            <LanguageSelector />
             <Link to="/settings">
               <Button variant="ghost" size="icon" className="hover:bg-primary/10 transition-all duration-200">
                 <Settings className="h-5 w-5" />
@@ -210,7 +214,7 @@ export function Dashboard() {
               onClick={signOut}
               className="hover:bg-red-50 hover:border-red-200 hover:text-red-700 font-medium"
             >
-              Sign Out
+              {t('common.signOut')}
             </Button>
           </div>
         </div>
@@ -220,18 +224,18 @@ export function Dashboard() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-slide-in-up">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold mb-1 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Quotes
+              {t('dashboard.quotes')}
             </h2>
             {!loading && (
               <p className="text-sm text-muted-foreground animate-fade-in stagger-1">
-                {totalCount} {totalCount === 1 ? 'quote' : 'quotes'}
+                {totalCount} {totalCount === 1 ? t('dashboard.quote') : t('dashboard.quotes')}
               </p>
             )}
           </div>
           <Link to="/quotes/new" className="w-full sm:w-auto">
             <Button className="gap-2 w-full sm:w-auto font-semibold">
               <Plus className="h-5 w-5" />
-              <span>Create Quote</span>
+              <span>{t('dashboard.createQuote')}</span>
             </Button>
           </Link>
         </div>
@@ -242,12 +246,12 @@ export function Dashboard() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <label htmlFor="sort-select" className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-                Sort by:
+                {t('dashboard.sortBy')}
               </label>
               <Select
                 value={`${sortConfig.field}-${sortConfig.order}`}
                 onValueChange={(value) => {
-                  const [field, order] = value.split('-')
+                  const [field] = value.split('-')
                   handleSortChange(field)
                 }}
               >
@@ -255,13 +259,13 @@ export function Dashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="created_at-desc">Newest First</SelectItem>
-                  <SelectItem value="created_at-asc">Oldest First</SelectItem>
-                  <SelectItem value="customer_name-asc">Customer Name (A-Z)</SelectItem>
-                  <SelectItem value="customer_name-desc">Customer Name (Z-A)</SelectItem>
-                  <SelectItem value="total_amount-desc">Amount (High to Low)</SelectItem>
-                  <SelectItem value="total_amount-asc">Amount (Low to High)</SelectItem>
-                  <SelectItem value="status-asc">Status</SelectItem>
+                  <SelectItem value="created_at-desc">{t('dashboard.newestFirst')}</SelectItem>
+                  <SelectItem value="created_at-asc">{t('dashboard.oldestFirst')}</SelectItem>
+                  <SelectItem value="customer_name-asc">{t('dashboard.customerNameAZ')}</SelectItem>
+                  <SelectItem value="customer_name-desc">{t('dashboard.customerNameZA')}</SelectItem>
+                  <SelectItem value="total_amount-desc">{t('dashboard.amountHighToLow')}</SelectItem>
+                  <SelectItem value="total_amount-asc">{t('dashboard.amountLowToHigh')}</SelectItem>
+                  <SelectItem value="status-asc">{t('dashboard.status')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -269,7 +273,7 @@ export function Dashboard() {
         </div>
 
         {loading ? (
-          <LoadingSpinner size="lg" text="Loading quotes..." />
+          <LoadingSpinner size="lg" text={t('dashboard.loadingQuotes')} />
         ) : quotes.length === 0 ? (
           <EmptyState />
         ) : (

@@ -6,6 +6,7 @@ import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { LineItemForm } from './LineItemForm'
 import { formatCurrency } from '@/utils/format'
 import type { QuoteItem } from '@/types/quote-creation'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface LineItemsStepProps {
   onNext: () => void
@@ -14,6 +15,7 @@ interface LineItemsStepProps {
 
 export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
   const { formData, addItem, updateItem, removeItem } = useQuoteCreationStore()
+  const { t } = useTranslation()
   const [editingItem, setEditingItem] = useState<QuoteItem | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
 
@@ -45,7 +47,7 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
   }
 
   const handleRemoveItem = (itemId: string) => {
-    if (confirm('Are you sure you want to remove this item?')) {
+    if (confirm(t('quoteCreation.removeItemConfirm'))) {
       removeItem(itemId)
     }
   }
@@ -55,9 +57,9 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Line Items</h2>
+        <h2 className="text-2xl font-bold mb-2">{t('quoteCreation.lineItems')}</h2>
         <p className="text-muted-foreground">
-          Add items to your quote. Each item can have add-ons and specific details.
+          {t('quoteCreation.addItemsDescription')}
         </p>
       </div>
 
@@ -66,7 +68,7 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {editingItem ? 'Edit Item' : 'Add Line Item'}
+                {editingItem ? t('quoteCreation.editItem') : t('quoteCreation.addLineItem')}
               </h3>
               <Button
                 variant="ghost"
@@ -88,10 +90,10 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
         <>
           {formData.items.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <p className="text-muted-foreground mb-4">No items added yet</p>
+              <p className="text-muted-foreground mb-4">{t('quoteCreation.noItemsAdded')}</p>
               <Button onClick={handleAddItem} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add First Item
+                {t('quoteCreation.addFirstItem')}
               </Button>
             </div>
           ) : (
@@ -103,11 +105,11 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{item.item_name}</h3>
                         <div className="text-sm text-muted-foreground mt-1">
-                          {item.area.toFixed(2)} sq ft × {formatCurrency(item.price_per_sqft)}/sq ft
+                          {item.area.toFixed(2)} {t('quoteCreation.sqFt')} × {formatCurrency(item.price_per_sqft)}{t('quoteCreation.perSqFt')}
                         </div>
                         {item.addons.length > 0 && (
                           <div className="mt-2">
-                            <div className="text-sm font-medium">Add-ons:</div>
+                            <div className="text-sm font-medium">{t('quote.addons')}:</div>
                             <div className="text-sm text-muted-foreground">
                               {item.addons.map((addon) => (
                                 <div key={addon.id}>
@@ -144,7 +146,7 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
 
               <Button onClick={handleAddItem} variant="outline" className="w-full gap-2">
                 <Plus className="h-4 w-4" />
-                Add Another Item
+                {t('quoteCreation.addAnotherItem')}
               </Button>
             </div>
           )}
@@ -154,7 +156,7 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
       {!showItemForm && formData.items.length > 0 && (
         <div className="p-4 bg-muted rounded-md">
           <div className="flex justify-between text-lg font-semibold">
-            <span>Subtotal:</span>
+            <span>{t('quote.subtotal')}:</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
         </div>
@@ -163,10 +165,10 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
       {!showItemForm && (
         <div className="flex justify-between">
           <Button variant="outline" onClick={onBack}>
-            Back
+            {t('common.back')}
           </Button>
           <Button onClick={onNext} disabled={!canProceed}>
-            Next: Materials & Notes
+            {t('quoteCreation.nextMaterialsNotes')}
           </Button>
         </div>
       )}

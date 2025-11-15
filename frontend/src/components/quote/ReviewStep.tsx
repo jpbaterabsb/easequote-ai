@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { formatCurrency } from '@/utils/format'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface ReviewStepProps {
   onBack: () => void
@@ -12,6 +13,7 @@ interface ReviewStepProps {
 
 export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
   const { formData } = useQuoteCreationStore()
+  const { t } = useTranslation()
 
   const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
   // When checkbox is checked (we provide materials), add material cost to total
@@ -22,33 +24,33 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Review Quote</h2>
+        <h2 className="text-2xl font-bold mb-2">{t('quoteCreation.reviewQuote')}</h2>
         <p className="text-muted-foreground">
-          Review all details before saving your quote.
+          {t('quoteCreation.reviewDetails')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Customer Information</CardTitle>
+          <CardTitle>{t('quoteCreation.customerInformation')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div>
-            <span className="font-medium">Name:</span> {formData.customer.customer_name}
+            <span className="font-medium">{t('quoteCreation.name')}:</span> {formData.customer.customer_name}
           </div>
           {formData.customer.customer_phone && (
             <div>
-              <span className="font-medium">Phone:</span> {formData.customer.customer_phone}
+              <span className="font-medium">{t('quoteCreation.phone')}:</span> {formData.customer.customer_phone}
             </div>
           )}
           {formData.customer.customer_email && (
             <div>
-              <span className="font-medium">Email:</span> {formData.customer.customer_email}
+              <span className="font-medium">{t('quoteCreation.email')}:</span> {formData.customer.customer_email}
             </div>
           )}
           {formData.customer.customer_address && (
             <div>
-              <span className="font-medium">Address:</span>{' '}
+              <span className="font-medium">{t('quoteCreation.address')}:</span>{' '}
               {[
                 formData.customer.customer_address,
                 formData.customer.customer_city,
@@ -64,7 +66,7 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Line Items ({formData.items.length})</CardTitle>
+          <CardTitle>{t('quoteCreation.lineItems')} ({formData.items.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {formData.items.map((item) => (
@@ -73,14 +75,14 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
                 <div>
                   <h3 className="font-semibold">{item.item_name}</h3>
                   <div className="text-sm text-muted-foreground">
-                    {item.area.toFixed(2)} sq ft × {formatCurrency(item.price_per_sqft)}/sq ft
+                    {item.area.toFixed(2)} {t('quoteCreation.sqFt')} × {formatCurrency(item.price_per_sqft)}{t('quoteCreation.perSqFt')}
                   </div>
                 </div>
                 <div className="font-bold">{formatCurrency(item.line_total)}</div>
               </div>
               {item.addons.length > 0 && (
                 <div className="ml-4 mt-2 text-sm">
-                  <div className="font-medium mb-1">Add-ons:</div>
+                  <div className="font-medium mb-1">{t('quote.addons')}:</div>
                   {item.addons.map((addon) => (
                     <div key={addon.id} className="text-muted-foreground">
                       • {addon.name} - {formatCurrency(addon.price)}
@@ -96,22 +98,22 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
       {(!formData.customer_provides_materials || formData.payment_method) && (
         <Card>
           <CardHeader>
-            <CardTitle>Additional Details</CardTitle>
+            <CardTitle>{t('quote.additionalDetails')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div>
-              <span className="font-medium">Customer Provides Materials:</span>{' '}
-              {formData.customer_provides_materials ? 'Yes' : 'No'}
+              <span className="font-medium">{t('quoteCreation.customerProvidesMaterials')}:</span>{' '}
+              {formData.customer_provides_materials ? t('quote.yes') : t('quote.no')}
             </div>
             {!formData.customer_provides_materials && formData.material_cost > 0 && (
               <div>
-                <span className="font-medium">Material Cost:</span>{' '}
+                <span className="font-medium">{t('quote.materialCost')}:</span>{' '}
                 {formatCurrency(formData.material_cost)}
               </div>
             )}
             {formData.payment_method && (
               <div>
-                <span className="font-medium">Payment Method:</span>{' '}
+                <span className="font-medium">{t('quoteCreation.paymentMethod')}:</span>{' '}
                 {formData.payment_method
                   .split('_')
                   .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -125,7 +127,7 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
       {formData.notes && (
         <Card>
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>{t('quote.notes')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap">{formData.notes}</p>
@@ -135,21 +137,21 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Summary</CardTitle>
+          <CardTitle>{t('quote.summary')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">
-            <span>Subtotal:</span>
+            <span>{t('quote.subtotal')}:</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
           {!formData.customer_provides_materials && formData.material_cost > 0 && (
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Material Cost:</span>
+              <span>{t('quote.materialCost')}:</span>
               <span>+{formatCurrency(formData.material_cost)}</span>
             </div>
           )}
           <div className="flex justify-between text-lg font-bold pt-2 border-t">
-            <span>Total:</span>
+            <span>{t('quote.total')}:</span>
             <span>{formatCurrency(total)}</span>
           </div>
         </CardContent>
@@ -157,16 +159,16 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack} disabled={saving}>
-          Back
+          {t('common.back')}
         </Button>
         <Button onClick={onSave} disabled={saving}>
           {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {t('quoteCreation.saving')}
             </>
           ) : (
-            'Save Quote'
+            t('quoteCreation.saveQuote')
           )}
         </Button>
       </div>

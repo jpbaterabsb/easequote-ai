@@ -19,16 +19,17 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X, Loader2 } from 'lucide-react'
-import { Quote } from '@/types/quote'
-import { QuoteItem } from '@/types/quote-creation'
+import type { Quote } from '@/types/quote'
 import { logAuditEvent } from '@/utils/audit'
 import { findOrCreateCustomer } from '@/utils/customers'
+import { LanguageSelector } from '@/components/ui/language-selector'
+import { useTranslation } from '@/hooks/useTranslation'
 
-const STEPS = [
-  { number: 1, title: 'Customer Info' },
-  { number: 2, title: 'Line Items' },
-  { number: 3, title: 'Materials & Notes' },
-  { number: 4, title: 'Review' },
+const getSteps = (t: (key: string) => string) => [
+  { number: 1, title: t('quoteCreation.customerInfo') },
+  { number: 2, title: t('quoteCreation.lineItems') },
+  { number: 3, title: t('quoteCreation.materialsNotes') },
+  { number: 4, title: t('quoteCreation.review') },
 ]
 
 export function EditQuote() {
@@ -36,6 +37,7 @@ export function EditQuote() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const {
     currentStep,
     setCurrentStep,
@@ -43,7 +45,6 @@ export function EditQuote() {
     reset,
     updateCustomer,
     setMaterials,
-    setPaymentMethod,
     setNotes,
     addItem,
     removeItem,
@@ -52,6 +53,7 @@ export function EditQuote() {
   const [saving, setSaving] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [originalQuote, setOriginalQuote] = useState<Quote | null>(null)
+  const STEPS = getSteps(t)
 
   useEffect(() => {
     if (id) {
@@ -105,7 +107,7 @@ export function EditQuote() {
 
       // Load materials and notes
       setMaterials(quote.customer_provides_materials, quote.material_cost)
-      setPaymentMethod(quote.payment_method || undefined)
+      // Note: payment_method is not stored in quotes table, it's only in the form
       setNotes(quote.notes || '')
 
       // Fetch and load quote items
@@ -316,13 +318,21 @@ export function EditQuote() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            EaseQuote AI
+          </h1>
+          <LanguageSelector />
+        </div>
+      </header>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold">Edit Quote</h1>
+            <h1 className="text-3xl font-bold">{t('quote.edit')}</h1>
             <Button variant="ghost" onClick={handleCancel}>
               <X className="h-4 w-4 mr-2" />
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
 
@@ -377,9 +387,9 @@ export function EditQuote() {
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel Editing?</DialogTitle>
+            <DialogTitle>{t('quote.cancelEditing')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel? All unsaved changes will be lost.
+              {t('quote.cancelConfirm')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-3">
@@ -388,14 +398,14 @@ export function EditQuote() {
               onClick={() => setShowCancelDialog(false)}
               className="w-full sm:w-auto border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
             >
-              Continue Editing
+              {t('quote.continueEditing')}
             </Button>
             <Button 
               variant="destructive" 
               onClick={confirmCancel}
               className="w-full sm:w-auto bg-gradient-to-r from-red-500 via-red-600 to-red-500 hover:from-red-600 hover:via-red-700 hover:to-red-600 shadow-md hover:shadow-lg transition-all duration-200"
             >
-              Discard Changes
+              {t('quote.discardChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>
