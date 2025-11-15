@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, memo } from 'react'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { useCustomerAutocomplete } from '@/hooks/useCustomerAutocomplete'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface CustomerAutocompleteProps {
   value: string
@@ -21,6 +21,7 @@ export const CustomerAutocomplete = memo(function CustomerAutocomplete({
   placeholder = 'Start typing to search customers...',
   id = 'customer_name',
 }: CustomerAutocompleteProps) {
+  const { t } = useTranslation()
   const [showSuggestions, setShowSuggestions] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const { customers, loading } = useCustomerAutocomplete(value)
@@ -97,7 +98,7 @@ export const CustomerAutocomplete = memo(function CustomerAutocomplete({
             ))
           ) : (
             <div className="px-4 py-3 text-sm text-muted-foreground">
-              No customers found. Continue typing to create a new customer.
+              {t('quoteCreation.noCustomersFound')}
             </div>
           )}
         </div>

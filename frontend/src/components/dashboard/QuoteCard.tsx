@@ -27,7 +27,7 @@ export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) 
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [dateKey, setDateKey] = useState(0)
   // Use translation hook to force re-render when language changes
-  const { currentLanguage } = useTranslation() // This ensures dates are updated when language changes
+  const { currentLanguage, t } = useTranslation() // This ensures dates are updated when language changes
 
   // Force re-render when language changes
   useEffect(() => {
@@ -84,27 +84,27 @@ export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) 
                 <DropdownMenuItem asChild>
                   <Link to={`/quotes/${quote.id}`} className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
-                    View
+                    {t('dashboard.view')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to={`/quotes/${quote.id}/edit`} className="flex items-center gap-2">
                     <Edit className="h-4 w-4" />
-                    Edit
+                    {t('dashboard.edit')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem disabled>
                   <Mail className="h-4 w-4 mr-2" />
-                  Send via Email
+                  {t('dashboard.sendViaEmail')}
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled>
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  Send via WhatsApp
+                  {t('dashboard.sendViaWhatsApp')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setShowStatusDialog(true)}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Change Status
+                  {t('dashboard.changeStatus')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -112,7 +112,7 @@ export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) 
                   onSelect={() => setShowDeleteDialog(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  {t('dashboard.delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -136,10 +136,10 @@ export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) 
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Quote"
-        description={`Are you sure you want to delete quote ${quote.quote_number}? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('quote.deleteQuoteDialog.title')}
+        description={t('quote.deleteQuoteDialog.description', { number: quote.quote_number })}
+        confirmText={t('quote.deleteQuoteDialog.delete')}
+        cancelText={t('quote.deleteQuoteDialog.cancel')}
         variant="destructive"
         onConfirm={handleDelete}
       />

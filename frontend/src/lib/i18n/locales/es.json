@@ -57,7 +57,15 @@
     "amountHighToLow": "Monto (Mayor a menor)",
     "amountLowToHigh": "Monto (Menor a mayor)",
     "status": "Estado",
-    "loadingQuotes": "Cargando cotizaciones..."
+    "loadingQuotes": "Cargando cotizaciones...",
+    "filters": "Filtros",
+    "searchPlaceholder": "Buscar por nombre del cliente, ID de cotización o dirección...",
+    "view": "Ver",
+    "edit": "Editar",
+    "sendViaEmail": "Enviar por correo",
+    "sendViaWhatsApp": "Enviar por WhatsApp",
+    "changeStatus": "Cambiar estado",
+    "delete": "Eliminar"
   },
   "quote": {
     "create": "Crear nueva cotización",
@@ -217,6 +225,7 @@
     "customerName": "Nombre del cliente",
     "required": "requerido",
     "startTypingToSearch": "Comienza a escribir para buscar clientes...",
+    "noCustomersFound": "No se encontraron clientes. Continúa escribiendo para crear un nuevo cliente.",
     "phoneNumber": "Número de teléfono",
     "email": "Correo electrónico",
     "jobAddress": "Dirección del trabajo (Opcional)",
@@ -263,6 +272,8 @@
     "startDate": "Fecha de inicio",
     "endDate": "Fecha de fin",
     "addAddons": "Agregar complementos",
+    "typeToSearch": "Escribe para buscar",
+    "or": "o",
     "lineTotal": "Total de línea",
     "useAddressAsEntered": "Usar dirección tal como está escrita",
     "enteringManually": "Ingresando dirección manualmente. Puedes editar ciudad, estado y código postal a continuación.",

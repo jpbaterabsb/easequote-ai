@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { useDebounce } from '@/hooks/useDebounce'
 import { addonOptions, type AddonOption } from '@/data/addons'
 import type { Addon } from '@/types/quote-creation'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface AddonSelectorProps {
   onSelect: (addon: Addon) => void
@@ -18,6 +19,7 @@ interface AddonSuggestion {
 }
 
 export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSuggestion, setSelectedSuggestion] = useState<AddonSuggestion | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -157,7 +159,7 @@ export function AddonSelector({ onSelect, onCancel }: AddonSelectorProps) {
               id="addon_search"
               value={searchQuery}
               onChange={(e) => handleInputChange(e.target.value)}
-              placeholder="Type to search (e.g., 'vinyl plank' or 'demolition')"
+              placeholder={`${t('quoteCreation.typeToSearch')} (e.g., 'vinyl plank' ${t('quoteCreation.or')} 'demolition')`}
               autoComplete="off"
               className="text-base"
             />

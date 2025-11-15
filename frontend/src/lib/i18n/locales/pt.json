@@ -57,7 +57,15 @@
     "amountHighToLow": "Valor (Maior para menor)",
     "amountLowToHigh": "Valor (Menor para maior)",
     "status": "Status",
-    "loadingQuotes": "Carregando cotações..."
+    "loadingQuotes": "Carregando cotações...",
+    "filters": "Filtros",
+    "searchPlaceholder": "Buscar por nome do cliente, ID da cotação ou endereço...",
+    "view": "Ver",
+    "edit": "Editar",
+    "sendViaEmail": "Enviar por e-mail",
+    "sendViaWhatsApp": "Enviar via WhatsApp",
+    "changeStatus": "Alterar status",
+    "delete": "Excluir"
   },
   "quote": {
     "create": "Criar nova cotação",
@@ -217,6 +225,7 @@
     "customerName": "Nome do cliente",
     "required": "obrigatório",
     "startTypingToSearch": "Comece a digitar para buscar clientes...",
+    "noCustomersFound": "Nenhum cliente encontrado. Continue digitando para criar um novo cliente.",
     "phoneNumber": "Número de telefone",
     "email": "E-mail",
     "jobAddress": "Endereço do trabalho (Opcional)",
@@ -263,6 +272,8 @@
     "startDate": "Data de início",
     "endDate": "Data de fim",
     "addAddons": "Adicionar complementos",
+    "typeToSearch": "Digite para buscar",
+    "or": "ou",
     "lineTotal": "Total da linha",
     "useAddressAsEntered": "Usar endereço como digitado",
     "enteringManually": "Inserindo endereço manualmente. Você pode editar cidade, estado e CEP abaixo.",

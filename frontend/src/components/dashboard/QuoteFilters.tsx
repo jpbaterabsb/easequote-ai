@@ -7,9 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { QuoteFilters as QuoteFiltersType, QuoteStatus } from '@/types/quote'
+import type { QuoteFilters as QuoteFiltersType, QuoteStatus } from '@/types/quote'
 import { X, Filter } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface QuoteFiltersProps {
   filters: QuoteFiltersType
@@ -26,6 +27,7 @@ const statusOptions: { value: QuoteStatus; label: string }[] = [
 ]
 
 export function QuoteFilters({ filters, onFiltersChange }: QuoteFiltersProps) {
+  const { t } = useTranslation()
   const [showFilters, setShowFilters] = useState(false)
 
   const updateFilter = <K extends keyof QuoteFiltersType>(
@@ -60,7 +62,7 @@ export function QuoteFilters({ filters, onFiltersChange }: QuoteFiltersProps) {
       <div className="flex gap-2">
         <div className="flex-1">
           <Input
-            placeholder="Search by customer name, quote ID, or address..."
+            placeholder={t('dashboard.searchPlaceholder')}
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
             className="w-full"
@@ -72,7 +74,7 @@ export function QuoteFilters({ filters, onFiltersChange }: QuoteFiltersProps) {
           className="gap-2 font-medium"
         >
           <Filter className="h-4 w-4" />
-          Filters
+          {t('dashboard.filters')}
           {hasActiveFilters && (
             <span className="ml-1 rounded-full bg-primary text-white px-1.5 py-0.5 text-xs font-semibold">
               {filters.status.length +

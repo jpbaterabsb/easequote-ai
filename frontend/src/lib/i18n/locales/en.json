@@ -57,7 +57,15 @@
     "amountHighToLow": "Amount (High to Low)",
     "amountLowToHigh": "Amount (Low to High)",
     "status": "Status",
-    "loadingQuotes": "Loading quotes..."
+    "loadingQuotes": "Loading quotes...",
+    "filters": "Filters",
+    "searchPlaceholder": "Search by customer name, quote ID, or address...",
+    "view": "View",
+    "edit": "Edit",
+    "sendViaEmail": "Send via Email",
+    "sendViaWhatsApp": "Send via WhatsApp",
+    "changeStatus": "Change Status",
+    "delete": "Delete"
   },
   "quote": {
     "create": "Create New Quote",
@@ -217,6 +225,7 @@
     "customerName": "Customer Name",
     "required": "required",
     "startTypingToSearch": "Start typing to search customers...",
+    "noCustomersFound": "No customers found. Continue typing to create a new customer.",
     "phoneNumber": "Phone Number",
     "email": "Email",
     "jobAddress": "Job Address (Optional)",
@@ -263,6 +272,8 @@
     "startDate": "Start Date",
     "endDate": "End Date",
     "addAddons": "Add Add-ons",
+    "typeToSearch": "Type to search",
+    "or": "or",
     "lineTotal": "Line Total",
     "useAddressAsEntered": "Use address as entered",
     "enteringManually": "Entering address manually. You can edit city, state, and zip below.",
