@@ -4,6 +4,12 @@ export interface CustomerData {
   name: string
   phone?: string | null
   email?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
+  lat?: number | null
+  lng?: number | null
 }
 
 /**
@@ -32,12 +38,18 @@ export async function findOrCreateCustomer(
         .single()
 
       if (existingCustomer) {
-        // Update customer info if needed
+        // Update customer info including address
         await supabase
           .from('customers')
           .update({
             name: customerData.name,
             phone: customerData.phone || null,
+            address: customerData.address || null,
+            city: customerData.city || null,
+            state: customerData.state || null,
+            zip: customerData.zip || null,
+            lat: customerData.lat || null,
+            lng: customerData.lng || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingCustomer.id)
@@ -57,22 +69,26 @@ export async function findOrCreateCustomer(
         .single()
 
       if (existingCustomer) {
-        // Update email if provided
-        if (customerData.email) {
-          await supabase
-            .from('customers')
-            .update({
-              email: customerData.email,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingCustomer.id)
-        }
+        // Update email and address if provided
+        await supabase
+          .from('customers')
+          .update({
+            email: customerData.email || null,
+            address: customerData.address || null,
+            city: customerData.city || null,
+            state: customerData.state || null,
+            zip: customerData.zip || null,
+            lat: customerData.lat || null,
+            lng: customerData.lng || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingCustomer.id)
 
         return existingCustomer.id
       }
     }
 
-    // Create new customer
+    // Create new customer with all fields including address
     const { data: newCustomer, error } = await supabase
       .from('customers')
       .insert({
@@ -80,6 +96,12 @@ export async function findOrCreateCustomer(
         name: customerData.name,
         phone: customerData.phone || null,
         email: customerData.email || null,
+        address: customerData.address || null,
+        city: customerData.city || null,
+        state: customerData.state || null,
+        zip: customerData.zip || null,
+        lat: customerData.lat || null,
+        lng: customerData.lng || null,
       })
       .select('id')
       .single()
@@ -92,4 +114,3 @@ export async function findOrCreateCustomer(
     return null
   }
 }
-

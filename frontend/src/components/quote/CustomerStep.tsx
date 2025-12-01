@@ -66,14 +66,34 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
   )
 
   const handleSelectCustomer = useCallback(
-    (customer: { name: string; phone?: string; email?: string }) => {
+    (customer: {
+      name: string
+      phone?: string
+      email?: string
+      address?: string
+      city?: string
+      state?: string
+      zip?: string
+      lat?: number
+      lng?: number
+    }) => {
       setValue('customer_name', customer.name, { shouldValidate: true })
       setValue('customer_phone', customer.phone || '', { shouldValidate: true })
       setValue('customer_email', customer.email || '', { shouldValidate: true })
+      setValue('customer_address', customer.address || '', { shouldValidate: true })
+      setValue('customer_city', customer.city || '', { shouldValidate: true })
+      setValue('customer_state', customer.state || '', { shouldValidate: true })
+      setValue('customer_zip', customer.zip || '', { shouldValidate: true })
       updateCustomer({
         customer_name: customer.name,
         customer_phone: customer.phone,
         customer_email: customer.email,
+        customer_address: customer.address,
+        customer_city: customer.city,
+        customer_state: customer.state,
+        customer_zip: customer.zip,
+        customer_lat: customer.lat,
+        customer_lng: customer.lng,
       })
     },
     [setValue, updateCustomer]
@@ -157,7 +177,7 @@ export function CustomerStep({ onNext }: CustomerStepProps) {
       <div className="flex justify-end">
         <button
           type="submit"
-          className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-white text-bold "
         >
           {t('quoteCreation.nextAddLineItems')}
         </button>

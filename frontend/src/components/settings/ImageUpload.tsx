@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -28,10 +28,23 @@ export function ImageUpload({
   className,
 }: ImageUploadProps) {
   const { t } = useTranslation()
-  const [preview, setPreview] = useState<string | null>(currentUrl || null)
+  const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Sync preview with currentUrl (add cache-busting to prevent browser cache)
+  useEffect(() => {
+    if (currentUrl) {
+      // Add cache-busting if not already present
+      const urlWithCacheBuster = currentUrl.includes('?') 
+        ? currentUrl 
+        : `${currentUrl}?t=${Date.now()}`
+      setPreview(urlWithCacheBuster)
+    } else {
+      setPreview(null)
+    }
+  }, [currentUrl])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

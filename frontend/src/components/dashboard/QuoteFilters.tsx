@@ -95,7 +95,7 @@ export function QuoteFilters({ filters, onFiltersChange }: QuoteFiltersProps) {
       </div>
 
       {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg bg-white/60 backdrop-blur-sm shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-xl bg-white shadow-lg shadow-gray-300/30 border border-gray-100">
           <div>
             <label className="text-sm font-medium mb-2 block">Status</label>
             <Select

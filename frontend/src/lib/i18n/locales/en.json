@@ -240,7 +240,11 @@
     "failedToUpdateProfile": "Failed to update profile",
     "failedToUpdatePassword": "Failed to update password",
     "failedToUploadLogo": "Failed to upload logo",
-    "failedToRemoveLogo": "Failed to remove logo"
+    "failedToRemoveLogo": "Failed to remove logo",
+    "businessName": "Business Name",
+    "businessNamePlaceholder": "Your Company LLC",
+    "businessAddress": "Business Address",
+    "addressPlaceholder": "Start typing your address..."
   },
   "quoteCreation": {
     "name": "Name",
@@ -256,8 +260,8 @@
     "noCustomersFound": "No customers found. Continue typing to create a new customer.",
     "phoneNumber": "Phone Number",
     "email": "Email",
-    "jobAddress": "Job Address (Optional)",
-    "enterJobAddress": "Enter job address...",
+    "jobAddress": "Customer Address (Optional)",
+    "enterJobAddress": "Enter customer address...",
     "city": "City",
     "state": "State",
     "zipCode": "ZIP Code",

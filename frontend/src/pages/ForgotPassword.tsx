@@ -53,8 +53,8 @@ export function ForgotPassword() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        <Card className="w-full max-w-md shadow-xl shadow-gray-300/40 border-gray-100">
           <CardHeader>
             <CardTitle className="text-2xl text-center">Check Your Email</CardTitle>
             <CardDescription className="text-center">
@@ -79,8 +79,8 @@ export function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <Card className="w-full max-w-md shadow-xl shadow-gray-300/40 border-gray-100">
         <CardHeader>
           <CardTitle className="text-2xl text-center">Reset Password</CardTitle>
           <CardDescription className="text-center">

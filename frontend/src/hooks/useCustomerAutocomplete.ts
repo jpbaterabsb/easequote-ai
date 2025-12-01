@@ -7,6 +7,12 @@ export interface Customer {
   name: string
   phone: string | null
   email: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  zip: string | null
+  lat: number | null
+  lng: number | null
   created_at: string
 }
 
@@ -48,7 +54,7 @@ export function useCustomerAutocomplete(searchQuery: string) {
         // Search by name, email, or phone
         const { data, error } = await supabase
           .from('customers')
-          .select('id, name, phone, email, created_at')
+          .select('id, name, phone, email, address, city, state, zip, lat, lng, created_at')
           .or(
             `name.ilike.%${debouncedQuery}%,email.ilike.%${debouncedQuery}%,phone.ilike.%${debouncedQuery}%`
           )

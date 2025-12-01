@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
@@ -22,8 +22,8 @@ import { X, Loader2 } from 'lucide-react'
 import type { Quote } from '@/types/quote'
 import { logAuditEvent } from '@/utils/audit'
 import { findOrCreateCustomer } from '@/utils/customers'
-import { LanguageSelector } from '@/components/ui/language-selector'
 import { useTranslation } from '@/hooks/useTranslation'
+import { MainLayout } from '@/components/layout/MainLayout'
 
 const getSteps = (t: (key: string) => string) => [
   { number: 1, title: t('quoteCreation.customerInfo') },
@@ -192,11 +192,17 @@ export function EditQuote() {
       const total =
         subtotal + (!formData.customer_provides_materials ? formData.material_cost : 0)
 
-      // Find or create customer
+      // Find or create customer (with address)
       const customerId = await findOrCreateCustomer({
         name: formData.customer.customer_name,
         phone: formData.customer.customer_phone || null,
         email: formData.customer.customer_email || null,
+        address: formData.customer.customer_address || null,
+        city: formData.customer.customer_city || null,
+        state: formData.customer.customer_state || null,
+        zip: formData.customer.customer_zip || null,
+        lat: formData.customer.customer_lat || null,
+        lng: formData.customer.customer_lng || null,
       })
 
       // Prepare old values for audit log
@@ -334,65 +340,90 @@ export function EditQuote() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <MainLayout>
+        <div className="flex-1 flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </MainLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            EaseQuote AI
-          </h1>
-          <LanguageSelector />
-        </div>
-      </header>
+    <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold">{t('quote.edit')}</h1>
-            <Button variant="ghost" onClick={handleCancel}>
-              <X className="h-4 w-4 mr-2" />
+            <Button 
+              variant="outline" 
+              onClick={handleCancel}
+              className="gap-2 border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200"
+            >
+              <X className="h-4 w-4" />
               {t('common.cancel')}
             </Button>
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-8">
-            {STEPS.map((step, index) => (
-              <div key={step.number} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                      currentStep > step.number
-                        ? 'bg-primary text-primary-foreground'
-                        : currentStep === step.number
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {currentStep > step.number ? '✓' : step.number}
+          <div className="flex items-center mb-6 sm:mb-8 overflow-x-auto pb-2 pt-2 px-1 sm:px-2">
+            {STEPS.map((step, index) => {
+              const isCompleted = currentStep > step.number
+              const isActive = currentStep === step.number
+              
+              return (
+                <Fragment key={step.number}>
+                  <div className="flex flex-col items-center flex-shrink-0 relative z-10">
+                    {/* Step Circle */}
+                    <div
+                      className={`
+                        w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold
+                        transition-all duration-300 transform border-2
+                        ${isCompleted 
+                          ? 'bg-primary border-primary text-white shadow-lg' 
+                          : isActive
+                          ? 'bg-primary border-primary text-white shadow-lg scale-110 ring-4 ring-primary/20'
+                          : 'bg-white border-gray-300 text-gray-500'
+                        }
+                      `}
+                      aria-current={isActive ? 'step' : undefined}
+                    >
+                      {isCompleted ? (
+                        <span className="animate-scale-in text-sm sm:text-base leading-[1] block">✓</span>
+                      ) : (
+                        <span className="text-sm sm:text-base leading-[1] block">{step.number}</span>
+                      )}
+                    </div>
+                    {/* Step Label */}
+                    <div className={`mt-2 text-xs text-center whitespace-nowrap px-1 transition-colors duration-200 ${
+                      isCompleted 
+                        ? 'text-primary font-medium' 
+                        : isActive 
+                        ? 'text-primary font-semibold' 
+                        : 'text-gray-500'
+                    }`}>
+                      {step.title}
+                    </div>
                   </div>
-                  <div className="mt-2 text-xs text-center text-muted-foreground">
-                    {step.title}
-                  </div>
-                </div>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={`h-1 flex-1 mx-2 ${
-                      currentStep > step.number ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
+                  {/* Connector Line */}
+                  {index < STEPS.length - 1 && (
+                    <div className="flex-1 mx-1 sm:mx-2 flex items-center relative" style={{ marginTop: '-20px' }}>
+                      {/* Background Line (gray) */}
+                      <div className="h-1 w-full bg-gray-200 rounded-full absolute" />
+                      {/* Progress Line (blue) */}
+                      <div 
+                        className={`h-1 rounded-full absolute transition-all duration-500 ${
+                          isCompleted ? 'bg-primary w-full' : 'bg-gray-200 w-0'
+                        }`}
+                      />
+                    </div>
+                  )}
+                </Fragment>
+              )
+            })}
           </div>
         </div>
 
-        <Card>
+        <Card className="shadow-xl shadow-gray-300/40 border-gray-100">
           <CardContent className="p-6">
             {currentStep === 1 && <CustomerStep onNext={handleNext} />}
             {currentStep === 2 && (
@@ -434,7 +465,7 @@ export function EditQuote() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </MainLayout>
   )
 }
 

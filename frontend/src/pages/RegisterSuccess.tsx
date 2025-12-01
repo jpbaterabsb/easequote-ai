@@ -8,8 +8,8 @@ export function RegisterSuccess() {
   const email = location.state?.email || 'your email'
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <Card className="w-full max-w-md shadow-xl shadow-gray-300/40 border-gray-100">
         <CardHeader>
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <Mail className="h-6 w-6 text-green-600" />

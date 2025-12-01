@@ -7,9 +7,9 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PasswordInput } from '@/components/auth/PasswordInput'
+import { Logo } from '@/components/ui/logo'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -52,9 +52,7 @@ export function Login() {
       }
 
       if (authData.session) {
-        // Set session persistence based on remember me
         if (data.rememberMe) {
-          // 30 days
           await supabase.auth.setSession({
             access_token: authData.session.access_token,
             refresh_token: authData.session.refresh_token,
@@ -91,30 +89,39 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-center">
-            Sign in to your EaseQuote AI account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        {/* Logo acima do card */}
+        <div className="mb-8">
+          <Logo linkTo={null} size="lg" className="h-16" />
+        </div>
+
+        {/* Card */}
+        <div className="w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-300/40 p-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+            <p className="text-gray-500">Sign in to your EaseQuote AI account</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
                 placeholder="you@example.com"
                 autoComplete="email"
+                className="h-12 rounded-lg border-gray-300 focus:border-primary focus:ring-primary"
               />
               {errors.email && (
                 <p className="text-sm text-red-600">{errors.email.message}</p>
@@ -123,10 +130,10 @@ export function Login() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm text-primary hover:underline font-medium"
                 >
                   Forgot password?
                 </Link>
@@ -136,47 +143,52 @@ export function Login() {
                 {...register('password')}
                 placeholder="Enter your password"
                 autoComplete="current-password"
+                className="h-12 rounded-lg border-gray-300 focus:border-primary focus:ring-primary"
               />
               {errors.password && (
                 <p className="text-sm text-red-600">{errors.password.message}</p>
               )}
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <Checkbox
                 id="rememberMe"
                 {...register('rememberMe')}
+                className="h-5 w-5 rounded border-gray-300"
               />
               <Label
                 htmlFor="rememberMe"
-                className="text-sm font-normal cursor-pointer"
+                className="text-sm text-gray-600 font-normal cursor-pointer"
               >
                 Remember me for 30 days
               </Label>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-base font-semibold rounded-lg"
+              disabled={loading}
+            >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
+          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              <span className="w-full border-t border-gray-200" />
             </div>
           </div>
 
+          {/* Google Button */}
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full h-12 text-base font-medium rounded-lg border-gray-300 hover:bg-gray-50"
             onClick={handleGoogleLogin}
             disabled={loading}
           >
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+            <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -196,17 +208,21 @@ export function Login() {
             </svg>
             Continue with Google
           </Button>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-center text-muted-foreground">
+
+          {/* Sign up link */}
+          <p className="text-center text-gray-600 mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline">
+            <Link to="/register" className="text-primary hover:underline font-medium">
               Sign up
             </Link>
-          </div>
-        </CardFooter>
-      </Card>
+          </p>
+        </div>
+      </div>
+
+      {/* Footer Logo */}
+      <div className="flex justify-center pb-8">
+        <Logo linkTo={null} size="sm" className="h-8 opacity-60" />
+      </div>
     </div>
   )
 }
-

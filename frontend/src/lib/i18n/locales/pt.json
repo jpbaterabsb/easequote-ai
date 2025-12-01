@@ -240,7 +240,11 @@
     "failedToUpdateProfile": "Erro ao atualizar perfil",
     "failedToUpdatePassword": "Erro ao atualizar senha",
     "failedToUploadLogo": "Erro ao enviar logo",
-    "failedToRemoveLogo": "Erro ao remover logo"
+    "failedToRemoveLogo": "Erro ao remover logo",
+    "businessName": "Nome da Empresa",
+    "businessNamePlaceholder": "Sua Empresa LTDA",
+    "businessAddress": "Endereço da Empresa",
+    "addressPlaceholder": "Comece a digitar seu endereço..."
   },
   "quoteCreation": {
     "name": "Nome",
@@ -256,8 +260,8 @@
     "noCustomersFound": "Nenhum cliente encontrado. Continue digitando para criar um novo cliente.",
     "phoneNumber": "Número de telefone",
     "email": "E-mail",
-    "jobAddress": "Endereço do trabalho (Opcional)",
-    "enterJobAddress": "Insira o endereço do trabalho...",
+    "jobAddress": "Endereço do Cliente (Opcional)",
+    "enterJobAddress": "Insira o endereço do cliente...",
     "city": "Cidade",
     "state": "Estado",
     "zipCode": "CEP",

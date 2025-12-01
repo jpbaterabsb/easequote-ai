@@ -14,11 +14,11 @@ export default {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: '#3B82F6',
+          DEFAULT: '#2563EB',
           foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
+          DEFAULT: '#283593',
           foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
@@ -43,7 +43,7 @@ export default {
         },
         // Status colors from PRD
         status: {
-          created: '#3B82F6',
+          created: '#2563EB',
           sent: '#10B981',
           accepted: '#F59E0B',
           'in-progress': '#8B5CF6',

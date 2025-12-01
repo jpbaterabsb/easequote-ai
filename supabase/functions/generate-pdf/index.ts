@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { jsPDF } from 'https://esm.sh/jspdf@2.5.1'
+import autoTable from 'https://esm.sh/jspdf-autotable@3.8.2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -253,7 +254,7 @@ serve(async (req) => {
     const profileFetchStartTime = Date.now()
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('full_name, phone, company_logo_url')
+      .select('full_name, phone, company_logo_url, business_name, address')
       .eq('id', user.id)
       .single()
     const profileFetchTime = Date.now() - profileFetchStartTime
@@ -272,6 +273,7 @@ serve(async (req) => {
 
     console.log(`[${requestId}] generate-pdf: Profile fetched`, {
       full_name: profile?.full_name,
+      business_name: profile?.business_name,
       has_logo: !!profile?.company_logo_url,
       fetch_time_ms: profileFetchTime,
     })
@@ -357,9 +359,9 @@ serve(async (req) => {
 
     // Color scheme (RGB values 0-255)
     const colors = {
-      primary: [41, 128, 185],      // Blue header
-      secondary: [52, 73, 94],      // Dark gray text
-      accent: [46, 204, 113],        // Green accent
+      primary: [37, 99, 235],       // Primary blue #2563EB
+      secondary: [40, 53, 147],     // Secondary blue #283593
+      accent: [46, 204, 113],       // Green accent
       lightGray: [236, 240, 241],   // Light gray background
       border: [189, 195, 199],      // Border gray
       text: [44, 62, 80],           // Dark text
@@ -379,77 +381,6 @@ serve(async (req) => {
     const drawRect = (x: number, y: number, w: number, h: number, color: number[]) => {
       doc.setFillColor(color[0], color[1], color[2])
       doc.rect(x, y, w, h, 'F')
-    }
-
-    // Helper function to draw a table cell without individual borders (borders drawn separately)
-    const drawCell = (x: number, y: number, w: number, h: number, text: string, options: {
-      align?: 'left' | 'center' | 'right'
-      bold?: boolean
-      fontSize?: number
-      bgColor?: number[]
-      textColor?: number[]
-    } = {}) => {
-      const {
-        align = 'left',
-        bold = false,
-        fontSize = 10,
-        bgColor,
-        textColor = colors.text,
-      } = options
-
-      // Draw background if specified
-      if (bgColor) {
-        drawRect(x, y, w, h, bgColor)
-      }
-
-      // Draw text (no border here, borders drawn separately for the whole table)
-      doc.setTextColor(textColor[0], textColor[1], textColor[2])
-      doc.setFontSize(fontSize)
-      doc.setFont('helvetica', bold ? 'bold' : 'normal')
-      
-      // Split text if needed
-      const textLines = doc.splitTextToSize(text, w - 4)
-      const lineHeight = fontSize * 0.4
-      const startY = y + (h / 2) - ((textLines.length - 1) * lineHeight / 2)
-      
-      textLines.forEach((line: string, index: number) => {
-        const textY = startY + (index * lineHeight)
-        const textX = align === 'right' 
-          ? x + w - 2
-          : align === 'center'
-          ? x + w / 2
-          : x + 2
-        
-        doc.text(line, textX, textY, {
-          align: align === 'left' ? 'left' : align === 'right' ? 'right' : 'center',
-        })
-      })
-    }
-
-    // Helper function to draw table grid borders
-    const drawTableBorders = (startX: number, startY: number, colWidths: Record<string, number>, rowHeights: number[], totalWidth: number) => {
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-      doc.setLineWidth(0.2)
-      
-      let currentY = startY
-      const colWidthsArray = Object.values(colWidths)
-      const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0)
-      
-      // Draw outer border
-      doc.rect(startX, startY, totalWidth, totalHeight)
-      
-      // Draw horizontal lines (between rows)
-      for (let i = 1; i < rowHeights.length; i++) {
-        currentY += rowHeights[i - 1]
-        doc.line(startX, currentY, startX + totalWidth, currentY)
-      }
-      
-      // Draw vertical lines (between columns)
-      let currentX = startX
-      for (let i = 0; i < colWidthsArray.length - 1; i++) {
-        currentX += colWidthsArray[i]
-        doc.line(currentX, startY, currentX, startY + totalHeight)
-      }
     }
 
     // Header section with logo and company/installer info
@@ -517,33 +448,45 @@ serve(async (req) => {
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
     
-    // Company name (use profile data or default)
-    const companyName = 'Best Floors LLC' // Could be from profile.company_name if available
-    doc.setFont('helvetica', 'bold')
-    doc.text(`${t.company}: ${companyName}`, infoStartX, infoY)
-    infoY += 5
+    // Company name (from profile)
+    const companyName = profile?.business_name || ''
+    if (companyName) {
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${t.company}: ${companyName}`, infoStartX, infoY)
+      infoY += 5
+    }
     
-    // Installer name (use profile data or default)
-    const installerName = profile?.full_name || 'John Doe'
-    doc.setFont('helvetica', 'normal')
-    doc.text(`${t.installer}: ${installerName}`, infoStartX, infoY)
-    infoY += 4
+    // Installer name (from profile)
+    const installerName = profile?.full_name || ''
+    if (installerName) {
+      doc.setFont('helvetica', 'normal')
+      doc.text(`${t.installer}: ${installerName}`, infoStartX, infoY)
+      infoY += 4
+    }
     
-    // Phone
-    const phone = profile?.phone || '(407) 555-1212'
-    doc.text(`Phone: ${phone}`, infoStartX, infoY)
-    infoY += 4
+    // Phone (from profile)
+    const phone = profile?.phone || ''
+    if (phone) {
+      doc.text(`Phone: ${phone}`, infoStartX, infoY)
+      infoY += 4
+    }
     
-    // Email
-    const email = user.email || 'info@bestfloors.com'
-    doc.text(`Email: ${email}`, infoStartX, infoY)
-    infoY += 4
+    // Email (from user)
+    const email = user.email || ''
+    if (email) {
+      doc.text(`Email: ${email}`, infoStartX, infoY)
+      infoY += 4
+    }
     
-    // Address
-    const address = '221 Lake View Dr, Orlando, FL 32811' // Could be from profile.address if available
-    const addressLines = doc.splitTextToSize(`Address: ${address}`, infoWidth - 5)
-    doc.text(addressLines, infoStartX, infoY)
-    infoY += addressLines.length * 4 + 5
+    // Address (from profile)
+    const businessAddress = profile?.address || ''
+    if (businessAddress) {
+      const addressLines = doc.splitTextToSize(`Address: ${businessAddress}`, infoWidth - 5)
+      doc.text(addressLines, infoStartX, infoY)
+      infoY += addressLines.length * 4 + 5
+    } else {
+      infoY += 5
+    }
     
     // QUOTE section (to the right of installer/company info)
     const quoteStartX = infoStartX + infoWidth + 10
@@ -628,29 +571,6 @@ serve(async (req) => {
 
     yPos += 10
 
-    // Project Items table (below Client section)
-    checkPageBreak(50)
-    
-    // Project Items title
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
-    doc.text(t.projectItems, margin, yPos)
-    yPos += 8
-    
-    const tableStartY = yPos
-    const rowHeight = 8
-    const headerRowHeight = 10
-
-    // Column widths for Project Items table
-    const colWidths = {
-      item: contentWidth * 0.25,
-      category: contentWidth * 0.35,
-      area: contentWidth * 0.15,
-      price: contentWidth * 0.12,
-      total: contentWidth * 0.13,
-    }
-
     // Category ID to name mapping
     const categoryMap: Record<string, string> = {
       'flooring': 'Flooring',
@@ -664,7 +584,6 @@ serve(async (req) => {
 
     // Helper function to get category name from item
     const getCategoryName = (item: any): string => {
-      // Try to get category_id from _metadata in addons
       if (item.addons && Array.isArray(item.addons)) {
         for (const addon of item.addons) {
           if (addon._metadata || addon.id === '_metadata' || addon.name === '_metadata') {
@@ -675,107 +594,37 @@ serve(async (req) => {
           }
         }
       }
-      // Fallback: try to infer from item_name (first word)
       const firstWord = item.item_name.split(/\s+/)[0].toLowerCase()
       if (categoryMap[firstWord]) {
         return categoryMap[firstWord]
       }
-      // Default fallback
       return ''
     }
-
-    // Calculate row heights first
-    const rowHeights: number[] = [headerRowHeight]
-    doc.setFontSize(10)
-    for (const item of translatedItems) {
-      const itemName = item.item_name
-      const categoryName = getCategoryName(item)
-      const itemNameLines = doc.splitTextToSize(itemName, colWidths.item - 4)
-      const categoryLines = doc.splitTextToSize(categoryName, colWidths.category - 4)
-      const maxLines = Math.max(itemNameLines.length, categoryLines.length)
-      const itemRowHeight = Math.max(rowHeight, (maxLines * 5) + 4)
-      rowHeights.push(itemRowHeight)
-    }
-
-    // Draw table borders as a grid (once, for the whole table)
-    const totalTableWidth = Object.values(colWidths).reduce((sum, w) => sum + w, 0)
-    const totalTableHeight = rowHeights.reduce((sum, h) => sum + h, 0)
-    drawTableBorders(margin, tableStartY, colWidths, rowHeights, totalTableWidth)
-
-    let currentX = margin
-
-    // Table header cells (without individual borders)
-    drawCell(currentX, tableStartY, colWidths.item, headerRowHeight, t.item, {
-      bold: true,
-      fontSize: 11,
-      bgColor: colors.secondary,
-      textColor: [255, 255, 255],
-    })
-    currentX += colWidths.item
-
-    drawCell(currentX, tableStartY, colWidths.category, headerRowHeight, t.category, {
-      bold: true,
-      fontSize: 11,
-      bgColor: colors.secondary,
-      textColor: [255, 255, 255],
-    })
-    currentX += colWidths.category
-
-    drawCell(currentX, tableStartY, colWidths.area, headerRowHeight, t.area, {
-      bold: true,
-      fontSize: 11,
-      bgColor: colors.secondary,
-      textColor: [255, 255, 255],
-      align: 'center',
-    })
-    currentX += colWidths.area
-
-    drawCell(currentX, tableStartY, colWidths.price, headerRowHeight, t.pricePerSqft, {
-      bold: true,
-      fontSize: 11,
-      bgColor: colors.secondary,
-      textColor: [255, 255, 255],
-      align: 'right',
-    })
-    currentX += colWidths.price
-
-    drawCell(currentX, tableStartY, colWidths.total, headerRowHeight, t.lineTotal, {
-      bold: true,
-      fontSize: 11,
-      bgColor: colors.secondary,
-      textColor: [255, 255, 255],
-      align: 'right',
-    })
-
-    yPos = tableStartY + headerRowHeight
 
     // Collect all materials from all items (for separate materials section)
     const materialsMap = new Map<string, { name: string; quantity?: number; unit?: string }>()
     for (const item of translatedItems) {
       if (item.addons && Array.isArray(item.addons)) {
         for (const addon of item.addons) {
-          // Skip _metadata fields
           if (addon._metadata || addon.name === '_metadata' || addon.id === '_metadata') {
             continue
           }
-          // Collect material type addons
           if (addon.addonType === 'material' || addon.addon_type === 'material') {
             const materialName = addon.name || (addon as any).name
+            if (!materialName || materialName.trim() === '') {
+              continue
+            }
             const materialUnit = addon.unit
             const materialQuantity = addon.quantity
-            
-            // Group materials by name and unit, sum quantities if same unit
-            const materialKey = `${materialName}_${materialUnit || 'none'}`
+            const materialKey = `${materialName.trim()}_${materialUnit || 'none'}`
             const existingMaterial = materialsMap.get(materialKey)
-            
             if (existingMaterial) {
-              // Sum quantities if same unit
               if (materialQuantity && existingMaterial.quantity && existingMaterial.unit === materialUnit) {
                 existingMaterial.quantity = existingMaterial.quantity + materialQuantity
               }
             } else {
               materialsMap.set(materialKey, {
-                name: materialName,
+                name: materialName.trim(),
                 quantity: materialQuantity,
                 unit: materialUnit,
               })
@@ -786,119 +635,24 @@ serve(async (req) => {
     }
     const allMaterials = Array.from(materialsMap.values())
 
-    // Table rows
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
-
-    for (let i = 0; i < translatedItems.length; i++) {
-      const item = translatedItems[i]
-      const itemRowHeight = rowHeights[i + 1] // +1 because rowHeights[0] is header
-      checkPageBreak(itemRowHeight)
-
-      // Get category name from item metadata
-      const categoryName = getCategoryName(item)
-      // Use full item_name for Item column
-      const itemName = item.item_name
-
-      // Alternate row background (use total table width, not contentWidth)
-      if (i % 2 === 0) {
-        drawRect(margin, yPos, totalTableWidth, itemRowHeight, colors.lightGray)
-      }
-
-      currentX = margin
-
-      // Item cell (full item_name)
-      drawCell(currentX, yPos, colWidths.item, itemRowHeight, itemName, {
-        align: 'left',
-        fontSize: 10,
-      })
-      currentX += colWidths.item
-
-      // Category cell (category name from metadata)
-      drawCell(currentX, yPos, colWidths.category, itemRowHeight, categoryName, {
-        align: 'left',
-        fontSize: 10,
-      })
-      currentX += colWidths.category
-
-      // Area cell
-      const areaFormatted = item.area.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-      const areaText = `${areaFormatted} sq ft`
-      drawCell(currentX, yPos, colWidths.area, itemRowHeight, areaText, {
-        align: 'center',
-        fontSize: 10,
-      })
-      currentX += colWidths.area
-
-      // Price per sqft cell
-      const priceFormatted = item.price_per_sqft.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-      const priceText = `$${priceFormatted}`
-      drawCell(currentX, yPos, colWidths.price, itemRowHeight, priceText, {
-        align: 'right',
-        fontSize: 10,
-      })
-      currentX += colWidths.price
-
-      // Line total cell
-      const totalFormatted = item.line_total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-      const totalText = `$${totalFormatted}`
-      drawCell(currentX, yPos, colWidths.total, itemRowHeight, totalText, {
-        align: 'right',
-        fontSize: 10,
-        bold: true,
-      })
-
-      yPos += itemRowHeight
-
-      // Dates (if available)
-      if (item.start_date || item.end_date) {
-        checkPageBreak(rowHeight)
-        
-        if (i % 2 === 0) {
-          drawRect(margin, yPos, contentWidth, rowHeight, colors.lightGray)
-        }
-
-        const dateText = [
-          item.start_date && `${t.startDate}: ${new Date(item.start_date).toLocaleDateString()}`,
-          item.end_date && `${t.endDate}: ${new Date(item.end_date).toLocaleDateString()}`,
-        ]
-          .filter(Boolean)
-          .join(' • ')
-
-        drawCell(margin, yPos, contentWidth, rowHeight, dateText, {
-          align: 'left',
-          fontSize: 8,
-        })
-
-        yPos += rowHeight
-      }
-
-      yPos += 2 // Small spacing between items
-    }
-
-    yPos += 10
-
-    // Collect all addons (excluding materials) from all items for separate addons table
+    // Collect all addons (excluding materials) from all items
     const allAddons: Array<{ addonName: string; itemName: string; price: number }> = []
     for (const item of translatedItems) {
       if (item.addons && Array.isArray(item.addons)) {
         for (const addon of item.addons) {
-          // Skip _metadata fields
           if (addon._metadata || addon.name === '_metadata' || addon.id === '_metadata') {
             continue
           }
-          // Skip material type addons
           if (addon.addonType === 'material' || addon.addon_type === 'material') {
             continue
           }
-          
           const addonName = addon.name || (addon as any).name
           const addonPrice = (addon as any).price || 0
-          
-          // Use full item_name for display
+          if (!addonName || addonName.trim() === '') {
+            continue
+          }
           allAddons.push({
-            addonName,
+            addonName: addonName.trim(),
             itemName: item.item_name,
             price: addonPrice,
           })
@@ -906,268 +660,121 @@ serve(async (req) => {
       }
     }
 
-    // Project Add-ons table (if there are any addons)
+    // autoTable styles with bottom margin to avoid footer overlap
+    const tableStyles = {
+      headStyles: {
+        fillColor: [40, 53, 147] as [number, number, number],  // Secondary #283593
+        textColor: [255, 255, 255] as [number, number, number],
+        fontStyle: 'bold' as const,
+        fontSize: 10,
+        halign: 'left' as const,
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: [44, 62, 80] as [number, number, number],
+      },
+      alternateRowStyles: {
+        fillColor: [236, 240, 241] as [number, number, number],
+      },
+      styles: {
+        lineColor: [189, 195, 199] as [number, number, number],
+        lineWidth: 0.2,
+        cellPadding: 3,
+      },
+      margin: { left: margin, right: margin, bottom: 30 },
+    }
+
+    // ========== PROJECT ITEMS TABLE ==========
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+    doc.text(t.projectItems, margin, yPos)
+    yPos += 2
+
+    const itemsTableData = translatedItems.map((item) => {
+      const areaFormatted = item.area.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      const priceFormatted = item.price_per_sqft.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      const totalFormatted = item.line_total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      return [
+        item.item_name,
+        getCategoryName(item),
+        `${areaFormatted} sq ft`,
+        `$${priceFormatted}`,
+        `$${totalFormatted}`,
+      ]
+    })
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [[t.item, t.category, t.area, t.pricePerSqft, t.lineTotal]],
+      body: itemsTableData,
+      ...tableStyles,
+      columnStyles: {
+        0: { cellWidth: contentWidth * 0.22 },
+        1: { cellWidth: contentWidth * 0.30 },
+        2: { cellWidth: contentWidth * 0.16, halign: 'center' },
+        3: { cellWidth: contentWidth * 0.14, halign: 'right' },
+        4: { cellWidth: contentWidth * 0.18, halign: 'right', fontStyle: 'bold' },
+      },
+    })
+
+    yPos = (doc as any).lastAutoTable.finalY + 10
+
+    // ========== PROJECT ADD-ONS TABLE ==========
     if (allAddons.length > 0) {
-      checkPageBreak(40)
-      
-      // Project Add-ons title
       doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
       doc.text(t.projectAddons, margin, yPos)
-      yPos += 8
-      
-      const addonsTableStartY = yPos
-      const addonsRowHeight = 8
-      const addonsHeaderRowHeight = 10
+    yPos += 2
 
-      // Column widths for Add-ons table
-      const addonsColWidths = {
-        addonName: contentWidth * 0.45,
-        itemName: contentWidth * 0.30,
-        price: contentWidth * 0.25,
-      }
-
-      // Calculate addons row heights first
-      doc.setFontSize(10)
-      const addonsRowHeights: number[] = [addonsHeaderRowHeight]
-      for (const addon of allAddons) {
-        const addonNameLines = doc.splitTextToSize(addon.addonName, addonsColWidths.addonName - 4)
-        const addonRowHeight = Math.max(addonsRowHeight, (addonNameLines.length * 5) + 4)
-        addonsRowHeights.push(addonRowHeight)
-      }
-
-      // Draw addons table borders as a grid
-      const addonsTotalTableWidth = Object.values(addonsColWidths).reduce((sum, w) => sum + w, 0)
-      const addonsTotalTableHeight = addonsRowHeights.reduce((sum, h) => sum + h, 0)
-      drawTableBorders(margin, addonsTableStartY, addonsColWidths, addonsRowHeights, addonsTotalTableWidth)
-
-      let addonsCurrentX = margin
-
-      // Table header
-      drawCell(addonsCurrentX, addonsTableStartY, addonsColWidths.addonName, addonsHeaderRowHeight, t.addonName, {
-        bold: true,
-        fontSize: 11,
-        bgColor: colors.secondary,
-        textColor: [255, 255, 255],
-      })
-      addonsCurrentX += addonsColWidths.addonName
-
-      drawCell(addonsCurrentX, addonsTableStartY, addonsColWidths.itemName, addonsHeaderRowHeight, t.itemName, {
-        bold: true,
-        fontSize: 11,
-        bgColor: colors.secondary,
-        textColor: [255, 255, 255],
-      })
-      addonsCurrentX += addonsColWidths.itemName
-
-      drawCell(addonsCurrentX, addonsTableStartY, addonsColWidths.price, addonsHeaderRowHeight, t.price, {
-        bold: true,
-        fontSize: 11,
-        bgColor: colors.secondary,
-        textColor: [255, 255, 255],
-        align: 'right',
-      })
-
-      yPos = addonsTableStartY + addonsHeaderRowHeight
-
-      // Add-ons table rows
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
-
-      for (let i = 0; i < allAddons.length; i++) {
-        const addon = allAddons[i]
-        const addonRowHeight = addonsRowHeights[i + 1] // +1 because rowHeights[0] is header
-        checkPageBreak(addonRowHeight)
-
-        // Alternate row background (use total table width)
-        if (i % 2 === 0) {
-          drawRect(margin, yPos, addonsTotalTableWidth, addonRowHeight, colors.lightGray)
-        }
-
-        addonsCurrentX = margin
-
-        // Addon name cell
-        drawCell(addonsCurrentX, yPos, addonsColWidths.addonName, addonRowHeight, addon.addonName, {
-          align: 'left',
-          fontSize: 10,
-        })
-        addonsCurrentX += addonsColWidths.addonName
-
-        // Item name cell
-        drawCell(addonsCurrentX, yPos, addonsColWidths.itemName, addonRowHeight, addon.itemName, {
-          align: 'left',
-          fontSize: 10,
-        })
-        addonsCurrentX += addonsColWidths.itemName
-
-        // Price cell
+      const addonsTableData = allAddons.map((addon) => {
         const priceFormatted = addon.price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-        const priceText = `$${priceFormatted}`
-        drawCell(addonsCurrentX, yPos, addonsColWidths.price, addonRowHeight, priceText, {
-          align: 'right',
-          fontSize: 10,
-        })
+        return [addon.addonName, addon.itemName, `$${priceFormatted}`]
+      })
 
-        yPos += addonRowHeight
-      }
+      autoTable(doc, {
+        startY: yPos,
+        head: [[t.addonName, t.itemName, t.price]],
+        body: addonsTableData,
+        ...tableStyles,
+        columnStyles: {
+          0: { cellWidth: contentWidth * 0.45 },
+          1: { cellWidth: contentWidth * 0.30 },
+          2: { cellWidth: contentWidth * 0.25, halign: 'right' },
+        },
+      })
 
-      yPos += 10
+      yPos = (doc as any).lastAutoTable.finalY + 10
     }
 
-    // Materials section (if there are any materials) - as a table
+    // ========== MATERIALS TABLE ==========
     if (allMaterials.length > 0) {
-      const materialsRowHeight = 8
-      const materialsHeaderRowHeight = 10
-
-      // Column widths for Materials table
-      const materialsColWidths = {
-        name: contentWidth * 0.50,
-        quantity: contentWidth * 0.25,
-        unit: contentWidth * 0.25,
-      }
-
-      const materialsTotalTableWidth = Object.values(materialsColWidths).reduce((sum, w) => sum + w, 0)
-
-      // Helper function to draw materials table header
-      const drawMaterialsHeader = (startY: number) => {
-        // Draw header row with borders
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-        doc.setLineWidth(0.2)
-        doc.rect(margin, startY, materialsTotalTableWidth, materialsHeaderRowHeight)
-        
-        // Draw vertical lines for header
-        let headerCurrentX = margin
-        doc.line(headerCurrentX + materialsColWidths.name, startY, headerCurrentX + materialsColWidths.name, startY + materialsHeaderRowHeight)
-        headerCurrentX += materialsColWidths.name
-        doc.line(headerCurrentX + materialsColWidths.quantity, startY, headerCurrentX + materialsColWidths.quantity, startY + materialsHeaderRowHeight)
-
-        let materialsCurrentX = margin
-
-        // Table header cells
-        drawCell(materialsCurrentX, startY, materialsColWidths.name, materialsHeaderRowHeight, t.materialName, {
-          bold: true,
-          fontSize: 11,
-          bgColor: colors.secondary,
-          textColor: [255, 255, 255],
-        })
-        materialsCurrentX += materialsColWidths.name
-
-        drawCell(materialsCurrentX, startY, materialsColWidths.quantity, materialsHeaderRowHeight, t.quantity, {
-          bold: true,
-          fontSize: 11,
-          bgColor: colors.secondary,
-          textColor: [255, 255, 255],
-          align: 'center',
-        })
-        materialsCurrentX += materialsColWidths.quantity
-
-        drawCell(materialsCurrentX, startY, materialsColWidths.unit, materialsHeaderRowHeight, t.unit, {
-          bold: true,
-          fontSize: 11,
-          bgColor: colors.secondary,
-          textColor: [255, 255, 255],
-          align: 'center',
-        })
-      }
-
-      // Check if we need a new page for title + header
-      checkPageBreak(materialsHeaderRowHeight + 20)
-      
-      // Materials section title
       doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
       doc.text(t.materials + ':', margin, yPos)
-      yPos += 8
-      
-      const materialsTableStartY = yPos
-      
-      // Draw header
-      drawMaterialsHeader(materialsTableStartY)
-      yPos = materialsTableStartY + materialsHeaderRowHeight
+      yPos += 2
 
-      // Materials table rows - draw borders row by row to handle page breaks
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+      const materialsTableData = allMaterials.map((material) => [
+        material.name,
+        material.quantity ? material.quantity.toString() : '',
+        material.unit || '',
+      ])
 
-      for (let i = 0; i < allMaterials.length; i++) {
-        const material = allMaterials[i]
-        
-        // Calculate row height
-        doc.setFontSize(10)
-        const materialNameLines = doc.splitTextToSize(material.name, materialsColWidths.name - 4)
-        const materialRowHeight = Math.max(materialsRowHeight, (materialNameLines.length * 5) + 4)
-        
-        // Check page break BEFORE drawing (include header if needed)
-        const needsHeader = yPos === margin // If we're at the top of a new page
-        const requiredHeight = materialRowHeight + (needsHeader ? materialsHeaderRowHeight + 8 : 0)
-        
-        if (yPos + requiredHeight > pageHeight - margin - 20) {
-          doc.addPage()
-          yPos = margin
-          
-          // Redraw title and header on new page
-          doc.setFontSize(12)
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
-          doc.text(t.materials + ':', margin, yPos)
-          yPos += 8
-          drawMaterialsHeader(yPos)
-          yPos += materialsHeaderRowHeight
-        }
+      autoTable(doc, {
+        startY: yPos,
+        head: [[t.materialName, t.quantity, t.unit]],
+        body: materialsTableData,
+        ...tableStyles,
+        columnStyles: {
+          0: { cellWidth: contentWidth * 0.50 },
+          1: { cellWidth: contentWidth * 0.25, halign: 'center' },
+          2: { cellWidth: contentWidth * 0.25, halign: 'center' },
+        },
+      })
 
-        // Draw row border (top and sides)
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-        doc.setLineWidth(0.2)
-        doc.line(margin, yPos, margin + materialsTotalTableWidth, yPos) // Top border
-        doc.line(margin, yPos, margin, yPos + materialRowHeight) // Left border
-        doc.line(margin + materialsTotalTableWidth, yPos, margin + materialsTotalTableWidth, yPos + materialRowHeight) // Right border
-        
-        // Draw vertical lines between columns
-        let verticalX = margin
-        doc.line(verticalX + materialsColWidths.name, yPos, verticalX + materialsColWidths.name, yPos + materialRowHeight)
-        verticalX += materialsColWidths.name
-        doc.line(verticalX + materialsColWidths.quantity, yPos, verticalX + materialsColWidths.quantity, yPos + materialRowHeight)
-
-        // Alternate row background
-        if (i % 2 === 0) {
-          drawRect(margin, yPos, materialsTotalTableWidth, materialRowHeight, colors.lightGray)
-        }
-
-        let materialsCurrentX = margin
-
-        // Material name cell
-        drawCell(materialsCurrentX, yPos, materialsColWidths.name, materialRowHeight, material.name, {
-          align: 'left',
-          fontSize: 10,
-        })
-        materialsCurrentX += materialsColWidths.name
-
-        // Quantity cell
-        const quantityText = material.quantity ? material.quantity.toString() : ''
-        drawCell(materialsCurrentX, yPos, materialsColWidths.quantity, materialRowHeight, quantityText, {
-          align: 'center',
-          fontSize: 10,
-        })
-        materialsCurrentX += materialsColWidths.quantity
-
-        // Unit cell
-        const unitText = material.unit || ''
-        drawCell(materialsCurrentX, yPos, materialsColWidths.unit, materialRowHeight, unitText, {
-          align: 'center',
-          fontSize: 10,
-        })
-
-        yPos += materialRowHeight
-        
-        // Draw bottom border for this row
-        doc.line(margin, yPos, margin + materialsTotalTableWidth, yPos)
-      }
-
-      yPos += 10
+      yPos = (doc as any).lastAutoTable.finalY + 10
     }
 
     // Summary section with styled box
@@ -1240,25 +847,33 @@ serve(async (req) => {
 
     // Notes section
     if (translatedNotes) {
-      checkPageBreak(30)
-      
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(11)
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
       doc.text(`${t.notes}:`, margin, yPos)
       yPos += 8
 
-      // Notes box
-      const notesBoxHeight = Math.min(40, (translatedNotes.length / 50) * 5 + 15)
+      // Calculate notes box height based on actual text content
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      const notesLines = doc.splitTextToSize(translatedNotes, contentWidth - 10)
+      const lineHeight = 4.5 // Line height in mm for font size 10
+      const textPadding = 10 // Top + bottom padding
+      const notesBoxHeight = Math.max(15, notesLines.length * lineHeight + textPadding)
+      
+      // Check if we need a new page for the notes box
+      checkPageBreak(notesBoxHeight + 10)
+
+      // Draw notes box background
       drawRect(margin, yPos, contentWidth, notesBoxHeight, [252, 252, 252])
       
+      // Draw notes box border
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
       doc.setLineWidth(0.3)
       doc.rect(margin, yPos, contentWidth, notesBoxHeight)
 
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      const notesLines = doc.splitTextToSize(translatedNotes, contentWidth - 10)
+      // Draw notes text
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
       doc.text(notesLines, margin + 5, yPos + 7)
       yPos += notesBoxHeight + 10
     }

@@ -16,8 +16,8 @@ import type { Language } from '@/components/quote/LanguageSelectorModal'
 import { SendEmailModal } from '@/components/quote/SendEmailModal'
 import { SendWhatsAppModal } from '@/components/quote/SendWhatsAppModal'
 import { logAuditEvent } from '@/utils/audit'
-import { LanguageSelector } from '@/components/ui/language-selector'
 import { useTranslation } from '@/hooks/useTranslation'
+import { MainLayout } from '@/components/layout/MainLayout'
 
 interface QuoteItemWithId extends QuoteItem {
   id: string
@@ -190,9 +190,11 @@ export function ViewQuote() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <MainLayout>
+        <div className="flex-1 flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </MainLayout>
     )
   }
 
@@ -201,15 +203,7 @@ export function ViewQuote() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            EaseQuote AI
-          </h1>
-          <LanguageSelector />
-        </div>
-      </header>
+    <MainLayout>
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl">
         {/* Header Section */}
         <div className="mb-6 space-y-4">
@@ -298,7 +292,7 @@ export function ViewQuote() {
 
         <div className="space-y-4 sm:space-y-6">
           {/* Customer Information */}
-          <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up">
+          <Card className="shadow-xl shadow-gray-300/40 border-gray-100 bg-white animate-slide-in-up">
             <CardHeader>
               <CardTitle>{t('quoteCreation.customerInformation')}</CardTitle>
             </CardHeader>
@@ -333,7 +327,7 @@ export function ViewQuote() {
           </Card>
 
           {/* Line Items */}
-          <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up stagger-1">
+          <Card className="shadow-xl shadow-gray-300/40 border-gray-100 bg-white animate-slide-in-up stagger-1">
             <CardHeader>
               <CardTitle>{t('quoteCreation.lineItems')} ({items.length})</CardTitle>
             </CardHeader>
@@ -401,7 +395,7 @@ export function ViewQuote() {
             const materials = Array.from(materialMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 
             return materials.length > 0 ? (
-              <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up stagger-2">
+              <Card className="shadow-xl shadow-gray-300/40 border-gray-100 bg-white animate-slide-in-up stagger-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
@@ -429,7 +423,7 @@ export function ViewQuote() {
 
           {/* Additional Details */}
           {(quote.customer_provides_materials || quote.notes) && (
-            <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up stagger-2">
+            <Card className="shadow-xl shadow-gray-300/40 border-gray-100 bg-white animate-slide-in-up stagger-2">
               <CardHeader>
                 <CardTitle>{t('quote.additionalDetails')}</CardTitle>
               </CardHeader>
@@ -457,7 +451,7 @@ export function ViewQuote() {
           )}
 
           {/* Summary */}
-          <Card className="shadow-elegant-lg border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50 backdrop-blur-sm animate-slide-in-up stagger-3">
+          <Card className="shadow-xl shadow-gray-300/40 border-gray-100 bg-white animate-slide-in-up stagger-3">
             <CardHeader>
               <CardTitle className="text-xl">{t('quote.summary')}</CardTitle>
             </CardHeader>
@@ -540,7 +534,7 @@ export function ViewQuote() {
         onConfirm={handleDelete}
         loading={deleting}
       />
-    </div>
+    </MainLayout>
   )
 }
 

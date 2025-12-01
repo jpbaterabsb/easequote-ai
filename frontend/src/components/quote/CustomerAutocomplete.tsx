@@ -7,7 +7,17 @@ import { useTranslation } from '@/hooks/useTranslation'
 interface CustomerAutocompleteProps {
   value: string
   onChange: (value: string) => void
-  onSelectCustomer?: (customer: { name: string; phone?: string; email?: string }) => void
+  onSelectCustomer?: (customer: {
+    name: string
+    phone?: string
+    email?: string
+    address?: string
+    city?: string
+    state?: string
+    zip?: string
+    lat?: number
+    lng?: number
+  }) => void
   error?: string
   placeholder?: string
   id?: string
@@ -48,7 +58,17 @@ export const CustomerAutocomplete = memo(function CustomerAutocomplete({
     setShowSuggestions(true)
   }
 
-  const handleSelectCustomer = (customer: { name: string; phone?: string | null; email?: string | null }) => {
+  const handleSelectCustomer = (customer: {
+    name: string
+    phone?: string | null
+    email?: string | null
+    address?: string | null
+    city?: string | null
+    state?: string | null
+    zip?: string | null
+    lat?: number | null
+    lng?: number | null
+  }) => {
     onChange(customer.name)
     setShowSuggestions(false)
 
@@ -57,6 +77,12 @@ export const CustomerAutocomplete = memo(function CustomerAutocomplete({
         name: customer.name,
         phone: customer.phone || undefined,
         email: customer.email || undefined,
+        address: customer.address || undefined,
+        city: customer.city || undefined,
+        state: customer.state || undefined,
+        zip: customer.zip || undefined,
+        lat: customer.lat || undefined,
+        lng: customer.lng || undefined,
       })
     }
   }
@@ -92,6 +118,11 @@ export const CustomerAutocomplete = memo(function CustomerAutocomplete({
                 {(customer.email || customer.phone) && (
                   <div className="text-sm text-gray-500 mt-0.5">
                     {[customer.email, customer.phone].filter(Boolean).join(' • ')}
+                  </div>
+                )}
+                {customer.address && (
+                  <div className="text-xs text-gray-400 mt-0.5 truncate">
+                    📍 {[customer.address, customer.city, customer.state].filter(Boolean).join(', ')}
                   </div>
                 )}
               </button>

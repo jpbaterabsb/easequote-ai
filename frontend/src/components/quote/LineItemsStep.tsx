@@ -115,14 +115,18 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
                                 <div className="text-sm text-muted-foreground">
                                   {item.addons
                                     .filter((addon) => addon.addonType === 'material')
-                                    .map((addon) => (
-                                      <div key={addon.id}>
-                                        • {addon.name}
-                                        {addon.quantity && (
-                                          <> ({addon.quantity} {addon.unit || ''})</>
-                                        )}
-                                      </div>
-                                    ))}
+                                    .map((addon) => {
+                                      // Extract base name (remove quantity in parentheses if present)
+                                      const baseName = addon.name.split('(')[0].trim()
+                                      return (
+                                        <div key={addon.id}>
+                                          • {baseName}
+                                          {addon.quantity && (
+                                            <> ({addon.quantity} {addon.unit || ''})</>
+                                          )}
+                                        </div>
+                                      )
+                                    })}
                                 </div>
                               </div>
                             )}

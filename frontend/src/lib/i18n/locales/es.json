@@ -240,7 +240,11 @@
     "failedToUpdateProfile": "Error al actualizar perfil",
     "failedToUpdatePassword": "Error al actualizar contraseña",
     "failedToUploadLogo": "Error al subir logo",
-    "failedToRemoveLogo": "Error al eliminar logo"
+    "failedToRemoveLogo": "Error al eliminar logo",
+    "businessName": "Nombre de la Empresa",
+    "businessNamePlaceholder": "Tu Empresa S.A.",
+    "businessAddress": "Dirección de la Empresa",
+    "addressPlaceholder": "Comienza a escribir tu dirección..."
   },
   "quoteCreation": {
     "name": "Nombre",
@@ -256,8 +260,8 @@
     "noCustomersFound": "No se encontraron clientes. Continúa escribiendo para crear un nuevo cliente.",
     "phoneNumber": "Número de teléfono",
     "email": "Correo electrónico",
-    "jobAddress": "Dirección del trabajo (Opcional)",
-    "enterJobAddress": "Ingresa la dirección del trabajo...",
+    "jobAddress": "Dirección del Cliente (Opcional)",
+    "enterJobAddress": "Ingresa la dirección del cliente...",
     "city": "Ciudad",
     "state": "Estado",
     "zipCode": "Código postal",

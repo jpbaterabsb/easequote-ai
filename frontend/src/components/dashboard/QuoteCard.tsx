@@ -43,7 +43,7 @@ export function QuoteCard({ quote, onDelete, onStatusChanged }: QuoteCardProps) 
 
   return (
     <>
-      <Card className="group hover:shadow-elegant-lg transition-all duration-300 hover:-translate-y-1 border-gray-200/50 bg-white/50 backdrop-blur-sm">
+      <Card className="group shadow-lg shadow-gray-300/30 hover:shadow-xl hover:shadow-gray-300/40 transition-all duration-300 hover:-translate-y-1 border-gray-100 bg-white">
         <CardContent className="p-5">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">

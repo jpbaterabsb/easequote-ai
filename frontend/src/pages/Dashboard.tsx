@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
-import { Settings, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import type { Quote, QuoteFilters, SortConfig } from '@/types/quote'
 import { EmptyState } from '@/components/dashboard/EmptyState'
@@ -19,21 +19,19 @@ import {
 } from '@/components/ui/select'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useToast } from '@/hooks/useToast'
-import { LanguageSelector } from '@/components/ui/language-selector'
-import { UserMenu } from '@/components/ui/user-menu'
 import { useTranslation } from '@/hooks/useTranslation'
+import { MainLayout } from '@/components/layout/MainLayout'
 
 const ITEMS_PER_PAGE = 20
 
 export function Dashboard() {
-  const { user, signOut } = useAuth()
+  useAuth() // Ensure user is authenticated
   const { toast } = useToast()
   const { t } = useTranslation()
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [profile, setProfile] = useState<{ avatar_url?: string; full_name?: string } | null>(null)
   const [filters, setFilters] = useState<QuoteFilters>({
     search: '',
     status: [],
@@ -51,12 +49,6 @@ export function Dashboard() {
   const debouncedSearch = useDebounce(filters.search, 300)
 
   useEffect(() => {
-    if (user) {
-      loadProfile()
-    }
-  }, [user])
-
-  useEffect(() => {
     fetchQuotes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -71,22 +63,6 @@ export function Dashboard() {
     sortConfig.order,
     currentPage,
   ])
-
-  const loadProfile = async () => {
-    if (!user) return
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url, full_name')
-        .eq('id', user.id)
-        .single()
-      if (data) {
-        setProfile(data)
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error)
-    }
-  }
 
   const fetchQuotes = async () => {
     try {
@@ -217,29 +193,7 @@ export function Dashboard() {
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between animate-slide-in-down">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            EaseQuote AI
-          </h1>
-          <div className="flex items-center gap-4">
-            <LanguageSelector />
-            <Link to="/settings">
-              <Button variant="ghost" size="icon" className="hover:bg-primary/10 transition-all duration-200">
-                <Settings className="h-5 w-5" />
-              </Button>
-            </Link>
-            <UserMenu
-              userEmail={user?.email}
-              avatarUrl={profile?.avatar_url}
-              fullName={profile?.full_name}
-              onSignOut={signOut}
-            />
-          </div>
-        </div>
-      </header>
-
+    <MainLayout>
       <main className="container mx-auto px-4 py-4 sm:py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-slide-in-up">
           <div>
@@ -326,6 +280,6 @@ export function Dashboard() {
           </>
         )}
       </main>
-    </div>
+    </MainLayout>
   )
 }

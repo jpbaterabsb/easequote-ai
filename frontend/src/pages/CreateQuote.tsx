@@ -20,8 +20,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
-import { LanguageSelector } from '@/components/ui/language-selector'
 import { useTranslation } from '@/hooks/useTranslation'
+import { MainLayout } from '@/components/layout/MainLayout'
 
 const getSteps = (t: (key: string) => string) => [
   { number: 1, title: t('quoteCreation.customerInfo') },
@@ -88,11 +88,17 @@ export function CreateQuote() {
       const total =
         subtotal + (!formData.customer_provides_materials ? formData.material_cost : 0)
 
-      // Find or create customer
+      // Find or create customer (with address)
       const customerId = await findOrCreateCustomer({
         name: formData.customer.customer_name,
         phone: formData.customer.customer_phone || null,
         email: formData.customer.customer_email || null,
+        address: formData.customer.customer_address || null,
+        city: formData.customer.customer_city || null,
+        state: formData.customer.customer_state || null,
+        zip: formData.customer.customer_zip || null,
+        lat: formData.customer.customer_lat || null,
+        lng: formData.customer.customer_lng || null,
       })
 
       // Create quote
@@ -184,15 +190,7 @@ export function CreateQuote() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            EaseQuote AI
-          </h1>
-          <LanguageSelector />
-        </div>
-      </header>
+    <MainLayout>
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl">
         <div className="mb-4 sm:mb-6 animate-slide-in-down">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -200,12 +198,12 @@ export function CreateQuote() {
               {t('quote.create')}
             </h1>
             <Button 
-              variant="ghost" 
+              variant="outline" 
               onClick={handleCancel} 
               aria-label="Cancel quote creation"
-              className="hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+              className="gap-2 border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200"
             >
-              <X className="h-4 w-4 mr-2" />
+              <X className="h-4 w-4" />
               {t('common.cancel')}
             </Button>
           </div>
@@ -215,19 +213,21 @@ export function CreateQuote() {
             {STEPS.map((step, index) => {
               const isCompleted = currentStep > step.number
               const isActive = currentStep === step.number
+              const isNextStepCompleted = currentStep > step.number + 1
               
               return (
                 <Fragment key={step.number}>
-                  <div className={`flex flex-col items-center flex-shrink-0 pt-2 ${isActive ? 'px-3 sm:px-4' : ''}`}>
+                  <div className="flex flex-col items-center flex-shrink-0 relative z-10">
+                    {/* Step Circle */}
                     <div
                       className={`
                         w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold
-                        transition-all duration-300 transform
+                        transition-all duration-300 transform border-2
                         ${isCompleted 
-                          ? 'bg-primary text-white shadow-lg scale-100' 
+                          ? 'bg-primary border-primary text-white shadow-lg' 
                           : isActive
-                          ? 'bg-primary text-white shadow-lg scale-110 ring-4 ring-primary/20'
-                          : 'bg-gray-200 text-gray-600 scale-100'
+                          ? 'bg-primary border-primary text-white shadow-lg scale-110 ring-4 ring-primary/20'
+                          : 'bg-white border-gray-300 text-gray-500'
                         }
                       `}
                       aria-current={isActive ? 'step' : undefined}
@@ -235,23 +235,32 @@ export function CreateQuote() {
                       {isCompleted ? (
                         <span className="animate-scale-in text-sm sm:text-base leading-[1] block">✓</span>
                       ) : (
-                        <span className={`text-sm sm:text-base leading-[1] block ${isActive ? 'animate-pulse' : ''}`}>{step.number}</span>
+                        <span className={`text-sm sm:text-base leading-[1] block ${isActive ? '' : ''}`}>{step.number}</span>
                       )}
                     </div>
-                    <div className={`mt-2 text-xs text-center truncate w-full px-1 transition-colors duration-200 ${
-                      isActive ? 'text-primary font-semibold' : 'text-muted-foreground'
+                    {/* Step Label */}
+                    <div className={`mt-2 text-xs text-center whitespace-nowrap px-1 transition-colors duration-200 ${
+                      isCompleted 
+                        ? 'text-primary font-medium' 
+                        : isActive 
+                        ? 'text-primary font-semibold' 
+                        : 'text-gray-500'
                     }`}>
                       {step.title}
                     </div>
                   </div>
+                  {/* Connector Line */}
                   {index < STEPS.length - 1 && (
-                    <div
-                      className={`
-                        h-1 flex-1 mx-2 sm:mx-4 rounded-full transition-all duration-500 flex-shrink-0
-                        ${isCompleted ? 'bg-primary' : 'bg-muted'}
-                      `}
-                      aria-hidden="true"
-                    />
+                    <div className="flex-1 mx-1 sm:mx-2 flex items-center relative" style={{ marginTop: '-20px' }}>
+                      {/* Background Line (gray) */}
+                      <div className="h-1 w-full bg-gray-200 rounded-full absolute" />
+                      {/* Progress Line (blue) */}
+                      <div 
+                        className={`h-1 rounded-full absolute transition-all duration-500 ${
+                          isCompleted ? 'bg-primary w-full' : 'bg-gray-200 w-0'
+                        }`}
+                      />
+                    </div>
                   )}
                 </Fragment>
               )
@@ -259,7 +268,7 @@ export function CreateQuote() {
           </div>
         </div>
 
-        <Card className="shadow-elegant-lg border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up">
+        <Card className="shadow-xl shadow-gray-300/40 border-gray-100 bg-white animate-slide-in-up">
           <CardContent className="p-4 sm:p-6">
             <div className="animate-fade-in">
               {currentStep === 1 && <CustomerStep onNext={handleNext} />}
@@ -303,7 +312,7 @@ export function CreateQuote() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </MainLayout>
   )
 }
 
