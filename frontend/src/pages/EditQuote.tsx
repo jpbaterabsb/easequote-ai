@@ -125,15 +125,28 @@ export function EditQuote() {
 
       // Add loaded items
       ;(itemsData || []).forEach((item) => {
+        const addons = (item.addons as any[]) || []
+        // Try to extract category_id and subcategory_id from addons metadata
+        // Look for a special metadata addon or check if they're stored elsewhere
+        let categoryId: string | undefined
+        let subcategoryId: string | undefined
+        
+        // Check if there's a metadata addon (stored as first addon with id '_metadata')
+        const metadataAddon = addons.find((a: any) => a.id === '_metadata')
+        if (metadataAddon) {
+          categoryId = metadataAddon.category_id
+          subcategoryId = metadataAddon.subcategory_id
+        }
+        
         addItem({
           id: item.id,
           item_name: item.item_name,
           area: item.area,
           price_per_sqft: item.price_per_sqft,
           line_total: item.line_total,
-          start_date: item.start_date || undefined,
-          end_date: item.end_date || undefined,
-          addons: (item.addons as any[]) || [],
+          addons: addons.filter((a: any) => a.id !== '_metadata'), // Remove metadata addon from display
+          category_id: categoryId,
+          subcategory_id: subcategoryId,
         })
       })
     } catch (error: any) {
@@ -263,16 +276,27 @@ export function EditQuote() {
 
       // Create new items
       if (formData.items.length > 0) {
-        const itemsToInsert = formData.items.map((item) => ({
-          quote_id: id,
-          item_name: item.item_name,
-          area: item.area,
-          price_per_sqft: item.price_per_sqft,
-          line_total: item.line_total,
-          start_date: item.start_date || null,
-          end_date: item.end_date || null,
-          addons: item.addons,
-        }))
+        const itemsToInsert = formData.items.map((item) => {
+          // Store category_id and subcategory_id in addons as metadata
+          const addonsWithMetadata = [...(item.addons || [])]
+          if (item.category_id || item.subcategory_id) {
+            addonsWithMetadata.unshift({
+              id: '_metadata',
+              name: '_metadata',
+              price: 0,
+              category_id: item.category_id,
+              subcategory_id: item.subcategory_id,
+            })
+          }
+          return {
+            quote_id: id,
+            item_name: item.item_name,
+            area: item.area,
+            price_per_sqft: item.price_per_sqft,
+            line_total: item.line_total,
+            addons: addonsWithMetadata,
+          }
+        })
 
         const { error: itemsError } = await supabase
           .from('quote_items')

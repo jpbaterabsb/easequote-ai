@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, MessageCircle, ExternalLink } from 'lucide-react'
 import { LanguageSelectorModal } from './LanguageSelectorModal'
 import type { Language } from './LanguageSelectorModal'
@@ -76,6 +77,7 @@ export function SendWhatsAppModal({
   const [language, setLanguage] = useState<Language>('en')
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [showMaterialPrices, setShowMaterialPrices] = useState(false) // Padrão: escondido
 
   useEffect(() => {
     if (open && customerPhone) {
@@ -126,6 +128,7 @@ export function SendWhatsAppModal({
           quote_id: quoteId,
           phone: phone.trim(),
           language,
+          show_material_prices: showMaterialPrices,
         },
       })
 
@@ -202,6 +205,26 @@ export function SendWhatsAppModal({
                 >
                   {getLanguageDisplayName(language)}
                 </Button>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-2 pt-2">
+              <Checkbox
+                id="show-material-prices-whatsapp"
+                checked={showMaterialPrices}
+                onCheckedChange={(checked) => setShowMaterialPrices(checked === true)}
+                disabled={generating}
+              />
+              <div className="flex-1 space-y-1">
+                <Label
+                  htmlFor="show-material-prices-whatsapp"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  {t('quote.languageSelectorModal.showMaterialPrices')}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('quote.languageSelectorModal.showMaterialPricesDescription')}
+                </p>
               </div>
             </div>
 

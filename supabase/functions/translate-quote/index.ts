@@ -16,6 +16,217 @@ interface TranslationRequest {
   notes?: string | null
 }
 
+type ProviderName = 'gemini' | 'openai' | 'anthropic'
+
+const TRANSLATION_PROVIDER = (Deno.env.get('TRANSLATION_PROVIDER') || 'gemini')
+  .toLowerCase() as ProviderName
+
+const PROVIDER_DEFAULT_MODELS: Record<ProviderName, string> = {
+  gemini: Deno.env.get('GEMINI_MODEL') || 'gemini-2.0-flash-exp',
+  openai: Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini',
+  anthropic: Deno.env.get('ANTHROPIC_MODEL') || 'claude-3-haiku-20240307',
+}
+
+const SYSTEM_INSTRUCTION = `
+You are a translation engine specialized in construction quotes.
+- Translate from English to the requested language (Spanish or Portuguese) while preserving meaning.
+- Keep numbers, currency symbols ($), measurement units (sq ft, ft, bags, etc.) untouched.
+- Maintain capitalization of proper nouns, brand names, and customer names.
+- Never add explanations or additional text. Output only a JSON array of strings in the same order as received.
+`.trim()
+
+const buildTranslationPrompt = (texts: string[], targetLanguage: 'en' | 'es' | 'pt') => {
+  const languageLabel = targetLanguage === 'es' ? 'Spanish' : targetLanguage === 'pt' ? 'Portuguese' : 'English'
+  return `
+Translate the following array of texts from English to ${languageLabel}.
+Return ONLY a valid JSON array in the same order. Do not change numbers, units, or punctuation such as $ or %.
+
+Input:
+${JSON.stringify(texts, null, 2)}
+`.trim()
+}
+
+async function translateWithGemini(
+  texts: string[],
+  targetLanguage: 'en' | 'es' | 'pt',
+  requestId: string
+): Promise<string[]> {
+  const apiKey = Deno.env.get('GEMINI_API_KEY')
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not configured')
+  }
+
+  const model = PROVIDER_DEFAULT_MODELS.gemini
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+  const prompt = buildTranslationPrompt(texts, targetLanguage)
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${SYSTEM_INSTRUCTION}\n\n${prompt}` }],
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error(`[${requestId}] translate-quote: Gemini API error`, {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText.substring(0, 300),
+    })
+    throw new Error(`Gemini API error: ${response.status}`)
+  }
+
+  const json = await response.json()
+  const candidate = json.candidates?.[0]?.content?.parts?.[0]?.text
+  return parseTranslationArray(candidate, texts, requestId, 'gemini')
+}
+
+async function translateWithOpenAI(
+  texts: string[],
+  targetLanguage: 'en' | 'es' | 'pt',
+  requestId: string
+): Promise<string[]> {
+  const apiKey = Deno.env.get('OPENAI_API_KEY')
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY not configured')
+  }
+
+  const model = PROVIDER_DEFAULT_MODELS.openai
+  const prompt = buildTranslationPrompt(texts, targetLanguage)
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      messages: [
+        { role: 'system', content: SYSTEM_INSTRUCTION },
+        { role: 'user', content: prompt },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error(`[${requestId}] translate-quote: OpenAI API error`, {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText.substring(0, 300),
+    })
+    throw new Error(`OpenAI API error: ${response.status}`)
+  }
+
+  const data = await response.json()
+  const content = data.choices?.[0]?.message?.content
+  return parseTranslationArray(content, texts, requestId, 'openai')
+}
+
+async function translateWithAnthropic(
+  texts: string[],
+  targetLanguage: 'en' | 'es' | 'pt',
+  requestId: string
+): Promise<string[]> {
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY not configured')
+  }
+
+  const model = PROVIDER_DEFAULT_MODELS.anthropic
+  const prompt = buildTranslationPrompt(texts, targetLanguage)
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      temperature: 0.2,
+      system: SYSTEM_INSTRUCTION,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error(`[${requestId}] translate-quote: Anthropic API error`, {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText.substring(0, 300),
+    })
+    throw new Error(`Anthropic API error: ${response.status}`)
+  }
+
+  const data = await response.json()
+  const text = data.content?.[0]?.text
+  return parseTranslationArray(text, texts, requestId, 'anthropic')
+}
+
+const parseTranslationArray = (
+  rawResponse: string | undefined,
+  fallback: string[],
+  requestId: string,
+  provider: ProviderName
+): string[] => {
+  if (!rawResponse) {
+    console.warn(`[${requestId}] translate-quote: ${provider} empty response`)
+    return fallback
+  }
+
+  try {
+    let candidate = rawResponse.trim()
+    if (!candidate.startsWith('[')) {
+      const match = candidate.match(/\[[\s\S]*\]/)
+      if (match) {
+        candidate = match[0]
+      }
+    }
+    const parsed = JSON.parse(candidate)
+    if (Array.isArray(parsed)) {
+      return parsed.map((text) => (typeof text === 'string' ? text : String(text)))
+    }
+  } catch (error) {
+    console.error(`[${requestId}] translate-quote: Failed to parse ${provider} response`, {
+      error: (error as Error).message,
+      preview: rawResponse.substring(0, 200),
+    })
+  }
+  return fallback
+}
+
+async function translateTextsViaProvider(
+  provider: ProviderName,
+  texts: string[],
+  targetLanguage: 'en' | 'es' | 'pt',
+  requestId: string
+): Promise<string[]> {
+  if (!texts.length) return []
+
+  switch (provider) {
+    case 'openai':
+      return translateWithOpenAI(texts, targetLanguage, requestId)
+    case 'anthropic':
+      return translateWithAnthropic(texts, targetLanguage, requestId)
+    case 'gemini':
+    default:
+      return translateWithGemini(texts, targetLanguage, requestId)
+  }
+}
+
 serve(async (req) => {
   const startTime = Date.now()
   const requestId = crypto.randomUUID()
@@ -47,16 +258,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Get Gemini API key
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!geminiApiKey) {
-      console.error(`[${requestId}] translate-quote: GEMINI_API_KEY not configured`)
-      return new Response(
-        JSON.stringify({ error: 'GEMINI_API_KEY not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     const { quote_id, target_language, items, notes }: TranslationRequest = await req.json()
     
@@ -123,88 +324,30 @@ serve(async (req) => {
     // Translate texts not in cache
     const textsToFetch = textsToTranslate.filter((text) => !translations[text])
     if (textsToFetch.length > 0) {
-      console.log(`[${requestId}] translate-quote: Translating ${textsToFetch.length} texts via Gemini API`)
-      const geminiStartTime = Date.now()
-      
-      // Use Gemini API to translate
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`
-      
-      const prompt = `Translate the following quote content from English to ${target_language === 'es' ? 'Spanish' : target_language === 'pt' ? 'Portuguese' : 'English'}. 
-Preserve all numbers, currency symbols ($), dates, proper nouns (customer names, addresses), and formatting.
-Return ONLY a JSON array of translations in the same order as the input texts, with no additional text or explanation.
+      console.log(`[${requestId}] translate-quote: Translating ${textsToFetch.length} texts via ${TRANSLATION_PROVIDER}`)
+      const translationStart = Date.now()
+      let translatedTexts: string[] = []
 
-Input texts:
-${JSON.stringify(textsToFetch, null, 2)}
-
-Return format: ["translation1", "translation2", ...]`
-
-      console.log(`[${requestId}] translate-quote: Calling Gemini API`, {
-        texts_count: textsToFetch.length,
-        prompt_length: prompt.length,
-      })
-
-      const geminiResponse = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
-      })
-
-      const geminiTime = Date.now() - geminiStartTime
-
-      if (!geminiResponse.ok) {
-        const errorText = await geminiResponse.text()
-        console.error(`[${requestId}] translate-quote: Gemini API error`, {
-          status: geminiResponse.status,
-          statusText: geminiResponse.statusText,
-          error: errorText.substring(0, 500),
-          response_time_ms: geminiTime,
-        })
-        throw new Error(`Gemini API error: ${geminiResponse.status}`)
-      }
-      
-      console.log(`[${requestId}] translate-quote: Gemini API response received`, {
-        status: geminiResponse.status,
-        response_time_ms: geminiTime,
-      })
-
-      const geminiData = await geminiResponse.json()
-      let translatedTexts: string[]
-      
       try {
-        const responseText = geminiData.candidates[0].content.parts[0].text.trim()
-        // Try to parse as JSON array
-        if (responseText.startsWith('[') && responseText.endsWith(']')) {
-          translatedTexts = JSON.parse(responseText)
-        } else {
-          // If not JSON, split by newlines or extract array from markdown code blocks
-          const jsonMatch = responseText.match(/\[.*\]/s)
-          if (jsonMatch) {
-            translatedTexts = JSON.parse(jsonMatch[0])
-          } else {
-            // Fallback: split by lines
-            translatedTexts = responseText.split('\n').filter(line => line.trim())
-          }
-        }
-      } catch (parseError) {
-        console.error(`[${requestId}] translate-quote: Failed to parse Gemini response`, {
-          error: parseError.message,
-          response_preview: geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.substring(0, 200),
+        translatedTexts = await translateTextsViaProvider(
+          TRANSLATION_PROVIDER,
+          textsToFetch,
+          target_language,
+          requestId
+        )
+      } catch (providerError) {
+        console.error(`[${requestId}] translate-quote: Provider translation failed`, {
+          provider: TRANSLATION_PROVIDER,
+          error: (providerError as Error).message,
         })
-        // Fallback to original texts if parsing fails
         translatedTexts = textsToFetch
       }
+
+      const translationTime = Date.now() - translationStart
+      console.log(`[${requestId}] translate-quote: Provider response received`, {
+        provider: TRANSLATION_PROVIDER,
+        response_time_ms: translationTime,
+      })
 
       // Store translations in cache
       const cacheStoreStartTime = Date.now()

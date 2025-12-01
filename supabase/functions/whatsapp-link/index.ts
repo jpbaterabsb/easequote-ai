@@ -10,6 +10,7 @@ interface WhatsAppRequest {
   quote_id: string
   phone: string
   language: 'en' | 'es' | 'pt'
+  show_material_prices?: boolean
 }
 
 // WhatsApp message templates by language
@@ -115,7 +116,7 @@ serve(async (req) => {
       auth_time_ms: authTime,
     })
 
-    const { quote_id, phone, language }: WhatsAppRequest = await req.json()
+    const { quote_id, phone, language, show_material_prices = false }: WhatsAppRequest = await req.json()
 
     console.log(`[${requestId}] whatsapp-link: Processing request`, {
       quote_id,
@@ -166,6 +167,7 @@ serve(async (req) => {
       body: JSON.stringify({
         quote_id,
         language,
+        show_material_prices,
       }),
     })
     const pdfGenTime = Date.now() - pdfGenStartTime

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { formatCurrency, formatDate } from '@/utils/format'
-import { ArrowLeft, Edit, Trash2, Loader2, FileDown, Mail, MessageCircle } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Loader2, FileDown, Mail, MessageCircle, Package } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { StatusChangeDialog } from '@/components/quote/StatusChangeDialog'
@@ -87,8 +87,6 @@ export function ViewQuote() {
           area: item.area,
           price_per_sqft: item.price_per_sqft,
           line_total: item.line_total,
-          start_date: item.start_date || undefined,
-          end_date: item.end_date || undefined,
           addons: (item.addons as any[]) || [],
         }))
       )
@@ -145,7 +143,7 @@ export function ViewQuote() {
     }
   }
 
-  const handleGeneratePdf = async (language: Language) => {
+  const handleGeneratePdf = async (language: Language, showMaterialPrices: boolean) => {
     if (!quote) return
 
     try {
@@ -156,6 +154,7 @@ export function ViewQuote() {
         body: {
           quote_id: quote.id,
           language,
+          show_material_prices: showMaterialPrices,
         },
       })
 
@@ -350,24 +349,19 @@ export function ViewQuote() {
                         <div className="text-sm text-muted-foreground">
                           {item.area.toFixed(2)} {t('quoteCreation.sqFt')} × {formatCurrency(item.price_per_sqft)}{t('quoteCreation.perSqFt')}
                         </div>
-                        {(item.start_date || item.end_date) && (
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {item.start_date && `${t('quote.start')}: ${formatDate(item.start_date)}`}
-                            {item.start_date && item.end_date && ' • '}
-                            {item.end_date && `${t('quote.end')}: ${formatDate(item.end_date)}`}
-                          </div>
-                        )}
                       </div>
                       <div className="font-bold">{formatCurrency(item.line_total)}</div>
                     </div>
-                    {item.addons.length > 0 && (
+                    {item.addons.filter((addon: any) => addon.addonType !== 'material').length > 0 && (
                       <div className="ml-4 mt-2 text-sm">
                         <div className="font-medium mb-1">{t('quote.addons')}:</div>
-                        {item.addons.map((addon) => (
-                          <div key={addon.id} className="text-muted-foreground">
-                            • {addon.name} - {formatCurrency(addon.price)}
-                          </div>
-                        ))}
+                        {item.addons
+                          .filter((addon: any) => addon.addonType !== 'material')
+                          .map((addon: any) => (
+                            <div key={addon.id} className="text-muted-foreground">
+                              • {addon.name} - {formatCurrency(addon.price)}
+                            </div>
+                          ))}
                       </div>
                     )}
                   </div>
@@ -375,6 +369,63 @@ export function ViewQuote() {
               )}
             </CardContent>
           </Card>
+
+          {/* Materials Section */}
+          {(() => {
+            // Collect all materials from all items
+            const materialMap = new Map<string, { name: string; quantity: number; unit?: string }>()
+            
+            items.forEach((item) => {
+              (item.addons || [])
+                .filter((addon: any) => addon.addonType === 'material')
+                .forEach((addon: any) => {
+                  // Extract base name (everything before the first parenthesis)
+                  const fullName = addon.name || 'Unknown Material'
+                  const baseName = fullName.split('(')[0].trim()
+                  const quantity = addon.quantity || 0
+                  const unit = addon.unit || ''
+                  
+                  if (materialMap.has(baseName)) {
+                    const existing = materialMap.get(baseName)!
+                    existing.quantity += quantity
+                  } else {
+                    materialMap.set(baseName, {
+                      name: baseName,
+                      quantity,
+                      unit,
+                    })
+                  }
+                })
+            })
+
+            const materials = Array.from(materialMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+
+            return materials.length > 0 ? (
+              <Card className="shadow-elegant border-gray-200/50 bg-white/80 backdrop-blur-sm animate-slide-in-up stagger-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    {t('quote.materials') || 'Materials'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {materials.map((material, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                      >
+                        <div className="font-medium text-sm">{material.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {material.quantity} {material.unit && `${material.unit}${material.quantity !== 1 ? 's' : ''}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null
+          })()}
 
           {/* Additional Details */}
           {(quote.customer_provides_materials || quote.notes) && (
@@ -435,6 +486,7 @@ export function ViewQuote() {
         onOpenChange={setShowLanguageModal}
         onLanguageSelect={handleGeneratePdf}
         loading={generatingPdf}
+        showMaterialPricesOption={true}
       />
 
       <SendEmailModal

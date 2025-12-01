@@ -18,6 +18,8 @@ interface QuoteCreationState {
   setNotes: (notes: string) => void
   reset: () => void
   setDraftId: (id: string | null) => void
+  // Getter para todos os materiais agregados
+  getAllMaterials: () => Addon[]
 }
 
 const initialFormData: QuoteFormData = {
@@ -137,6 +139,14 @@ export const useQuoteCreationStore = create<QuoteCreationState>()(
         }),
 
       setDraftId: (id) => set({ draftId: id }),
+
+      // Getter para todos os materiais de todos os itens
+      getAllMaterials: () => {
+        const state = useQuoteCreationStore.getState()
+        return state.formData.items.flatMap((item) =>
+          item.addons.filter((addon) => addon.addonType === 'material')
+        )
+      },
     }),
     {
       name: 'quote-creation-draft',

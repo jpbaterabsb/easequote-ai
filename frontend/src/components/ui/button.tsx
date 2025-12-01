@@ -11,6 +11,8 @@ const buttonVariants = cva(
         default: 'bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5',
         destructive:
           'bg-destructive text-white hover:bg-destructive/90 shadow-md shadow-destructive/25 hover:shadow-lg hover:shadow-destructive/30 hover:-translate-y-0.5',
+        warning:
+          'bg-[#F59E0B] text-white hover:bg-[#D97706] shadow-md shadow-[#F59E0B]/25 hover:shadow-lg hover:shadow-[#F59E0B]/30 hover:-translate-y-0.5',
         outline:
           'border-0 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm hover:shadow-md transition-all ring-1 ring-inset ring-gray-200/50 hover:ring-gray-300/50',
         secondary:

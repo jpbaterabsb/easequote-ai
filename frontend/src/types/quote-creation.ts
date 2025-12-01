@@ -4,15 +4,23 @@ export interface QuoteItem {
   area: number
   price_per_sqft: number
   line_total: number
-  start_date?: string
-  end_date?: string
   addons: Addon[]
+  category_id?: string // Optional: category ID for editing
+  subcategory_id?: string // Optional: subcategory ID for editing
 }
+
+export type AddonType = 'material' | 'service' | 'complexity' | 'general'
 
 export interface Addon {
   id: string
   name: string
   price: number
+  addonType?: AddonType // Tipo do addon: material, service, complexity, ou general
+  // Campos opcionais para materiais (para lista futura)
+  quantity?: number
+  unit?: string
+  priceType?: 'sqft' | 'unit' | 'ft' | 'step' | 'percent'
+  basePrice?: number
 }
 
 export interface CustomerInfo {
@@ -34,6 +42,8 @@ export interface QuoteFormData {
   material_cost: number
   payment_method?: 'credit_card' | 'debit_card' | 'cash' | 'check' | 'zelle'
   notes: string
+  start_date?: string
+  end_date?: string
 }
 
 export interface QuoteDraft {

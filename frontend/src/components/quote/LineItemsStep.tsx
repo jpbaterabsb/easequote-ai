@@ -107,17 +107,40 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
                         <div className="text-sm text-muted-foreground mt-1">
                           {item.area.toFixed(2)} {t('quoteCreation.sqFt')} × {formatCurrency(item.price_per_sqft)}{t('quoteCreation.perSqFt')}
                         </div>
-                        {item.addons.length > 0 && (
+                        {(item.addons.length > 0) && (
+                          <>
+                            {item.addons.filter((addon) => addon.addonType === 'material').length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-sm font-medium">{t('quoteCreation.materials')}:</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.addons
+                                    .filter((addon) => addon.addonType === 'material')
+                                    .map((addon) => (
+                                      <div key={addon.id}>
+                                        • {addon.name}
+                                        {addon.quantity && (
+                                          <> ({addon.quantity} {addon.unit || ''})</>
+                                        )}
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
+                        {item.addons.filter((addon) => addon.addonType !== 'material').length > 0 && (
                           <div className="mt-2">
                             <div className="text-sm font-medium">{t('quote.addons')}:</div>
                             <div className="text-sm text-muted-foreground">
-                              {item.addons.map((addon) => (
-                                <div key={addon.id}>
-                                  • {addon.name} - {formatCurrency(addon.price)}
-                                </div>
-                              ))}
+                              {item.addons
+                                .filter((addon) => addon.addonType !== 'material')
+                                .map((addon) => (
+                                  <div key={addon.id}>
+                                    • {addon.name} - {formatCurrency(addon.price)}
+                                  </div>
+                                ))}
                             </div>
                           </div>
+                            )}
+                          </>
                         )}
                         <div className="mt-2 font-bold text-lg">
                           {formatCurrency(item.line_total)}

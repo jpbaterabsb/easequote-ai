@@ -2,8 +2,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { formatCurrency } from '@/utils/format'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Package } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
+import type { Addon } from '@/types/quote-creation'
 
 interface ReviewStepProps {
   onBack: () => void
@@ -20,6 +21,34 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
   // When checkbox is unchecked (customer provides materials), don't add cost
   const total =
     subtotal + (!formData.customer_provides_materials ? formData.material_cost : 0)
+
+  // Collect all materials from all items
+  const materialMap = new Map<string, { name: string; quantity: number; unit?: string }>()
+  
+  formData.items.forEach((item) => {
+    item.addons
+      .filter((addon) => addon.addonType === 'material')
+      .forEach((addon) => {
+        // Extract base name (everything before the first parenthesis)
+        const fullName = addon.name || 'Unknown Material'
+        const baseName = fullName.split('(')[0].trim()
+        const quantity = addon.quantity || 0
+        const unit = addon.unit || ''
+        
+        if (materialMap.has(baseName)) {
+          const existing = materialMap.get(baseName)!
+          existing.quantity += quantity
+        } else {
+          materialMap.set(baseName, {
+            name: baseName,
+            quantity,
+            unit,
+          })
+        }
+      })
+  })
+
+  const materials = Array.from(materialMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="space-y-6">
@@ -80,14 +109,16 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
                 </div>
                 <div className="font-bold">{formatCurrency(item.line_total)}</div>
               </div>
-              {item.addons.length > 0 && (
+              {item.addons.filter((addon) => addon.addonType !== 'material').length > 0 && (
                 <div className="ml-4 mt-2 text-sm">
                   <div className="font-medium mb-1">{t('quote.addons')}:</div>
-                  {item.addons.map((addon) => (
-                    <div key={addon.id} className="text-muted-foreground">
-                      • {addon.name} - {formatCurrency(addon.price)}
-                    </div>
-                  ))}
+                  {item.addons
+                    .filter((addon) => addon.addonType !== 'material')
+                    .map((addon) => (
+                      <div key={addon.id} className="text-muted-foreground">
+                        • {addon.name} - {formatCurrency(addon.price)}
+                      </div>
+                    ))}
                 </div>
               )}
             </div>
@@ -120,6 +151,33 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
                   .join(' ')}
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Materials Section */}
+      {materials.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              {t('quote.materials') || 'Materials'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {materials.map((material, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                >
+                  <div className="font-medium text-sm">{material.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {material.quantity} {material.unit && `${material.unit}${material.quantity !== 1 ? 's' : ''}`}
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

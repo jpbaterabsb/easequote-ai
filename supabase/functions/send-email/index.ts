@@ -12,6 +12,7 @@ interface EmailRequest {
   subject?: string
   body?: string
   language: 'en' | 'es' | 'pt'
+  show_material_prices?: boolean
 }
 
 // Email templates by language
@@ -131,7 +132,7 @@ serve(async (req) => {
       auth_time_ms: authTime,
     })
 
-    const { quote_id, recipient_email, subject, body, language }: EmailRequest =
+    const { quote_id, recipient_email, subject, body, language, show_material_prices = false }: EmailRequest =
       await req.json()
 
     console.log(`[${requestId}] send-email: Processing request`, {
@@ -201,6 +202,7 @@ serve(async (req) => {
       body: JSON.stringify({
         quote_id,
         language,
+        show_material_prices,
       }),
     })
     const pdfGenTime = Date.now() - pdfGenStartTime

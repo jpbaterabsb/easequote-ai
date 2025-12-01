@@ -9,6 +9,7 @@ import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { formatCurrency } from '@/utils/format'
 import type { QuoteFormData } from '@/types/quote-creation'
 import { useTranslation } from '@/hooks/useTranslation'
+import { MaterialsList } from './MaterialsList'
 
 interface MaterialsNotesStepProps {
   onNext: () => void
@@ -41,6 +42,9 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
           {t('quoteCreation.materialsNotesDescription')}
         </p>
       </div>
+
+      {/* Lista de materiais agregados */}
+      <MaterialsList />
 
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
