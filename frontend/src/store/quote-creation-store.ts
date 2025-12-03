@@ -41,7 +41,7 @@ const initialFormData: QuoteFormData = {
 
 export const useQuoteCreationStore = create<QuoteCreationState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentStep: 1,
       formData: initialFormData,
       draftId: null,
@@ -141,10 +141,10 @@ export const useQuoteCreationStore = create<QuoteCreationState>()(
       setDraftId: (id) => set({ draftId: id }),
 
       // Getter para todos os materiais de todos os itens
-      getAllMaterials: () => {
-        const state = useQuoteCreationStore.getState()
-        return state.formData.items.flatMap((item) =>
-          item.addons.filter((addon) => addon.addonType === 'material')
+      getAllMaterials: (): Addon[] => {
+        const state = get()
+        return state.formData.items.flatMap((item: QuoteItem) =>
+          item.addons.filter((addon: Addon) => addon.addonType === 'material')
         )
       },
     }),

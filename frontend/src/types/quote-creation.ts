@@ -21,6 +21,9 @@ export interface Addon {
   unit?: string
   priceType?: 'sqft' | 'unit' | 'ft' | 'step' | 'percent'
   basePrice?: number
+  // Metadata fields for storing category/subcategory info
+  category_id?: string
+  subcategory_id?: string
 }
 
 export interface CustomerInfo {

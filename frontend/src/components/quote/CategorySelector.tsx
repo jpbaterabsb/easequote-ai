@@ -1,6 +1,5 @@
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { categories, type Category } from '@/data/categories'
+import { categories } from '@/data/categories'
 import { useTranslation } from '@/hooks/useTranslation'
 import { 
   LayoutGrid, 

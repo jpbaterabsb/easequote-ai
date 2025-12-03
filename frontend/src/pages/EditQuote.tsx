@@ -24,6 +24,7 @@ import { logAuditEvent } from '@/utils/audit'
 import { findOrCreateCustomer } from '@/utils/customers'
 import { useTranslation } from '@/hooks/useTranslation'
 import { MainLayout } from '@/components/layout/MainLayout'
+import type { QuoteItem } from '@/types/quote-creation'
 
 const getSteps = (t: (key: string) => string) => [
   { number: 1, title: t('quoteCreation.customerInfo') },
@@ -121,7 +122,7 @@ export function EditQuote() {
 
       // Clear existing items first
       const currentItems = useQuoteCreationStore.getState().formData.items
-      currentItems.forEach((item) => removeItem(item.id))
+      currentItems.forEach((item: QuoteItem) => removeItem(item.id))
 
       // Add loaded items
       ;(itemsData || []).forEach((item) => {
@@ -188,7 +189,7 @@ export function EditQuote() {
 
     try {
       // Calculate totals
-      const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
+      const subtotal = formData.items.reduce((sum: number, item: QuoteItem) => sum + item.line_total, 0)
       const total =
         subtotal + (!formData.customer_provides_materials ? formData.material_cost : 0)
 
@@ -282,7 +283,7 @@ export function EditQuote() {
 
       // Create new items
       if (formData.items.length > 0) {
-        const itemsToInsert = formData.items.map((item) => {
+        const itemsToInsert = formData.items.map((item: QuoteItem) => {
           // Store category_id and subcategory_id in addons as metadata
           const addonsWithMetadata = [...(item.addons || [])]
           if (item.category_id || item.subcategory_id) {

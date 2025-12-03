@@ -549,7 +549,7 @@ export function SubcategoryAddonsPopup({
   const totalPrice = selectedAddonsPrice
   
   // Função para renderizar uma seção de addons
-  const renderAddonSection = (title: string, addons: typeof displayAddons, type: 'service' | 'material' | 'complexity' | 'general') => {
+  const renderAddonSection = (title: string, addons: typeof displayAddons, _type: 'service' | 'material' | 'complexity' | 'general') => {
     if (addons.length === 0) return null
     
     return (

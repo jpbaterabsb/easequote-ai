@@ -5,7 +5,7 @@ import { Plus, Edit, Trash2, X } from 'lucide-react'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { LineItemForm } from './LineItemForm'
 import { formatCurrency } from '@/utils/format'
-import type { QuoteItem } from '@/types/quote-creation'
+import type { QuoteItem, Addon } from '@/types/quote-creation'
 import { useTranslation } from '@/hooks/useTranslation'
 
 interface LineItemsStepProps {
@@ -19,7 +19,7 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
   const [editingItem, setEditingItem] = useState<QuoteItem | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
 
-  const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
+  const subtotal = formData.items.reduce((sum: number, item: QuoteItem) => sum + item.line_total, 0)
 
   const handleAddItem = () => {
     setEditingItem(null)
@@ -109,13 +109,13 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
                         </div>
                         {(item.addons.length > 0) && (
                           <>
-                            {item.addons.filter((addon) => addon.addonType === 'material').length > 0 && (
+                            {item.addons.filter((addon: Addon) => addon.addonType === 'material').length > 0 && (
                               <div className="mt-2">
                                 <div className="text-sm font-medium">{t('quoteCreation.materials')}:</div>
                                 <div className="text-sm text-muted-foreground">
                                   {item.addons
-                                    .filter((addon) => addon.addonType === 'material')
-                                    .map((addon) => {
+                                    .filter((addon: Addon) => addon.addonType === 'material')
+                                    .map((addon: Addon) => {
                                       // Extract base name (remove quantity in parentheses if present)
                                       const baseName = addon.name.split('(')[0].trim()
                                       return (
@@ -130,13 +130,13 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
                                 </div>
                               </div>
                             )}
-                        {item.addons.filter((addon) => addon.addonType !== 'material').length > 0 && (
+                        {item.addons.filter((addon: Addon) => addon.addonType !== 'material').length > 0 && (
                           <div className="mt-2">
                             <div className="text-sm font-medium">{t('quote.addons')}:</div>
                             <div className="text-sm text-muted-foreground">
                               {item.addons
-                                .filter((addon) => addon.addonType !== 'material')
-                                .map((addon) => (
+                                .filter((addon: Addon) => addon.addonType !== 'material')
+                                .map((addon: Addon) => (
                                   <div key={addon.id}>
                                     • {addon.name} - {formatCurrency(addon.price)}
                                   </div>

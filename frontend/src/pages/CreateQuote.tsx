@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { MainLayout } from '@/components/layout/MainLayout'
+import type { QuoteItem } from '@/types/quote-creation'
 
 const getSteps = (t: (key: string) => string) => [
   { number: 1, title: t('quoteCreation.customerInfo') },
@@ -82,7 +83,7 @@ export function CreateQuote() {
 
     try {
       // Calculate totals
-      const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
+      const subtotal = formData.items.reduce((sum: number, item: QuoteItem) => sum + item.line_total, 0)
       // When checkbox is checked (we provide materials), add material cost to total
       // When checkbox is unchecked (customer provides materials), don't add cost
       const total =
@@ -130,7 +131,7 @@ export function CreateQuote() {
 
       // Create quote items
       if (formData.items.length > 0) {
-        const itemsToInsert = formData.items.map((item) => {
+        const itemsToInsert = formData.items.map((item: QuoteItem) => {
           // Store category_id and subcategory_id in addons as metadata
           const addonsWithMetadata = [...(item.addons || [])]
           if (item.category_id || item.subcategory_id) {
@@ -213,8 +214,6 @@ export function CreateQuote() {
             {STEPS.map((step, index) => {
               const isCompleted = currentStep > step.number
               const isActive = currentStep === step.number
-              const isNextStepCompleted = currentStep > step.number + 1
-              
               return (
                 <Fragment key={step.number}>
                   <div className="flex flex-col items-center flex-shrink-0 relative z-10">

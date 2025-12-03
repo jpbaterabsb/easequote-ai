@@ -4,7 +4,7 @@ import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { formatCurrency } from '@/utils/format'
 import { Loader2, Package } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
-import type { Addon } from '@/types/quote-creation'
+import type { Addon, QuoteItem } from '@/types/quote-creation'
 
 interface ReviewStepProps {
   onBack: () => void
@@ -16,7 +16,7 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
   const { formData } = useQuoteCreationStore()
   const { t } = useTranslation()
 
-  const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
+  const subtotal = formData.items.reduce((sum: number, item: QuoteItem) => sum + item.line_total, 0)
   // When checkbox is checked (we provide materials), add material cost to total
   // When checkbox is unchecked (customer provides materials), don't add cost
   const total =
@@ -25,10 +25,10 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
   // Collect all materials from all items
   const materialMap = new Map<string, { name: string; quantity: number; unit?: string }>()
   
-  formData.items.forEach((item) => {
+  formData.items.forEach((item: QuoteItem) => {
     item.addons
-      .filter((addon) => addon.addonType === 'material')
-      .forEach((addon) => {
+      .filter((addon: Addon) => addon.addonType === 'material')
+      .forEach((addon: Addon) => {
         // Extract base name (everything before the first parenthesis)
         const fullName = addon.name || 'Unknown Material'
         const baseName = fullName.split('(')[0].trim()
@@ -98,7 +98,7 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
           <CardTitle>{t('quoteCreation.lineItems')} ({formData.items.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {formData.items.map((item) => (
+          {formData.items.map((item: QuoteItem) => (
             <div key={item.id} className="border-b pb-4 last:border-b-0">
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -109,12 +109,12 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
                 </div>
                 <div className="font-bold">{formatCurrency(item.line_total)}</div>
               </div>
-              {item.addons.filter((addon) => addon.addonType !== 'material').length > 0 && (
+              {item.addons.filter((addon: Addon) => addon.addonType !== 'material').length > 0 && (
                 <div className="ml-4 mt-2 text-sm">
                   <div className="font-medium mb-1">{t('quote.addons')}:</div>
                   {item.addons
-                    .filter((addon) => addon.addonType !== 'material')
-                    .map((addon) => (
+                    .filter((addon: Addon) => addon.addonType !== 'material')
+                    .map((addon: Addon) => (
                       <div key={addon.id} className="text-muted-foreground">
                         • {addon.name} - {formatCurrency(addon.price)}
                       </div>
@@ -147,7 +147,7 @@ export function ReviewStep({ onBack, onSave, saving }: ReviewStepProps) {
                 <span className="font-medium">{t('quoteCreation.paymentMethod')}:</span>{' '}
                 {formData.payment_method
                   .split('_')
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ')}
               </div>
             )}

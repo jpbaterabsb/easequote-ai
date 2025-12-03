@@ -13,7 +13,7 @@ import {
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Package, Plus, Trash2 } from 'lucide-react'
-import type { Addon } from '@/types/quote-creation'
+import type { Addon, QuoteItem } from '@/types/quote-creation'
 
 interface MaterialInstance {
   addonId: string
@@ -47,7 +47,7 @@ export function MaterialsList() {
   const [selectedItemId, setSelectedItemId] = useState<string>(formData.items[0]?.id || '')
 
   useEffect(() => {
-    if (!formData.items.find((item) => item.id === selectedItemId)) {
+    if (!formData.items.find((item: QuoteItem) => item.id === selectedItemId)) {
       setSelectedItemId(formData.items[0]?.id || '')
     }
   }, [formData.items, selectedItemId])
@@ -55,10 +55,10 @@ export function MaterialsList() {
   const materialGroups = useMemo<MaterialGroup[]>(() => {
     const materialMap = new Map<string, MaterialGroup>()
   
-  formData.items.forEach((item) => {
+  formData.items.forEach((item: QuoteItem) => {
     item.addons
-      .filter((addon) => addon.addonType === 'material')
-      .forEach((addon) => {
+      .filter((addon: Addon) => addon.addonType === 'material')
+      .forEach((addon: Addon) => {
           const key = getBaseMaterialName(addon.name).toLowerCase() || addon.id
           const displayName = getBaseMaterialName(addon.name) || addon.name
           const quantity = addon.quantity ?? 0
@@ -270,7 +270,7 @@ export function MaterialsList() {
                 />
               </SelectTrigger>
               <SelectContent>
-                {formData.items.map((item) => (
+                {formData.items.map((item: QuoteItem) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.item_name}
                   </SelectItem>

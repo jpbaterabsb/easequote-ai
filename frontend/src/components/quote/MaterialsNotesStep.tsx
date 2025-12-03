@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { formatCurrency } from '@/utils/format'
-import type { QuoteFormData } from '@/types/quote-creation'
+import type { QuoteFormData, QuoteItem } from '@/types/quote-creation'
 import { useTranslation } from '@/hooks/useTranslation'
 import { MaterialsList } from './MaterialsList'
 
@@ -23,7 +23,7 @@ export function MaterialsNotesStep({ onNext, onBack }: MaterialsNotesStepProps) 
     formData.material_cost.toString()
   )
 
-  const subtotal = formData.items.reduce((sum, item) => sum + item.line_total, 0)
+  const subtotal = formData.items.reduce((sum: number, item: QuoteItem) => sum + item.line_total, 0)
   // When checkbox is unchecked (we provide materials), add material cost to total
   // When checkbox is checked (customer provides materials), don't add cost
   const total = subtotal + (!formData.customer_provides_materials ? formData.material_cost : 0)

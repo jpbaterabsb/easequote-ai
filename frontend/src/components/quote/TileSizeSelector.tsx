@@ -1,5 +1,4 @@
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 import { tileSizes, type TileSize } from '@/data/tile-sizes'
 import { useTranslation } from '@/hooks/useTranslation'
 
