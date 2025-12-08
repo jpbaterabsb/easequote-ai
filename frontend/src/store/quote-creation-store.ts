@@ -11,6 +11,7 @@ interface QuoteCreationState {
   addItem: (item: QuoteItem) => void
   updateItem: (itemId: string, updates: Partial<QuoteItem>) => void
   removeItem: (itemId: string) => void
+  cloneItem: (itemId: string) => void
   addAddonToItem: (itemId: string, addon: Addon) => void
   removeAddonFromItem: (itemId: string, addonId: string) => void
   setMaterials: (providesMaterials: boolean, cost: number) => void
@@ -81,6 +82,29 @@ export const useQuoteCreationStore = create<QuoteCreationState>()(
             items: state.formData.items.filter((item) => item.id !== itemId),
           },
         })),
+
+      cloneItem: (itemId) =>
+        set((state) => {
+          const itemToClone = state.formData.items.find((item) => item.id === itemId)
+          if (!itemToClone) return state
+
+          const clonedItem: QuoteItem = {
+            ...itemToClone,
+            id: crypto.randomUUID(),
+            item_name: `${itemToClone.item_name} (Copy)`,
+            addons: itemToClone.addons.map((addon) => ({
+              ...addon,
+              id: crypto.randomUUID(),
+            })),
+          }
+
+          return {
+            formData: {
+              ...state.formData,
+              items: [...state.formData.items, clonedItem],
+            },
+          }
+        }),
 
       addAddonToItem: (itemId, addon) =>
         set((state) => ({

@@ -313,6 +313,8 @@
     "noItemsAdded": "No items added yet",
     "addFirstItem": "Add First Item",
     "editItem": "Edit Item",
+    "cloneItem": "Clone Item",
+    "deleteItem": "Delete Item",
     "addLineItem": "Add Line Item",
     "addAnotherItem": "Add Another Item",
     "removeItemConfirm": "Are you sure you want to remove this item?",

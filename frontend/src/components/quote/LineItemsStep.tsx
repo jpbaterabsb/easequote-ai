@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Edit, Trash2, X } from 'lucide-react'
+import { Plus, Edit, Trash2, X, Copy } from 'lucide-react'
 import { useQuoteCreationStore } from '@/store/quote-creation-store'
 import { LineItemForm } from './LineItemForm'
 import { formatCurrency } from '@/utils/format'
@@ -14,7 +14,7 @@ interface LineItemsStepProps {
 }
 
 export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
-  const { formData, addItem, updateItem, removeItem } = useQuoteCreationStore()
+  const { formData, addItem, updateItem, removeItem, cloneItem } = useQuoteCreationStore()
   const { t } = useTranslation()
   const [editingItem, setEditingItem] = useState<QuoteItem | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
@@ -150,18 +150,30 @@ export function LineItemsStep({ onNext, onBack }: LineItemsStepProps) {
                           {formatCurrency(item.line_total)}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEditItem(item)}
+                          title={t('quoteCreation.editItem')}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => cloneItem(item.id)}
+                          title={t('quoteCreation.cloneItem')}
+                          className="hover:text-primary"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleRemoveItem(item.id)}
+                          title={t('quoteCreation.deleteItem')}
+                          className="hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
