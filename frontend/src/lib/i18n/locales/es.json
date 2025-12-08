@@ -402,6 +402,12 @@
     "tryAgain": "Intentar de nuevo",
     "goToDashboard": "Ir al panel de control",
     "unexpectedError": "Encontramos un error inesperado. Por favor, inténtalo de nuevo."
+  },
+  "subscription": {
+    "paymentSuccess": "¡Pago Exitoso!",
+    "paymentSuccessDescription": "Gracias por suscribirte. Tu cuenta está activa.",
+    "paymentCancelled": "Pago Cancelado",
+    "paymentCancelledDescription": "Tu pago fue cancelado. Puedes intentarlo de nuevo en cualquier momento."
   }
 }
 

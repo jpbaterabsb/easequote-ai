@@ -402,6 +402,12 @@
     "tryAgain": "Try Again",
     "goToDashboard": "Go to Dashboard",
     "unexpectedError": "We encountered an unexpected error. Please try again."
+  },
+  "subscription": {
+    "paymentSuccess": "Payment Successful!",
+    "paymentSuccessDescription": "Thank you for subscribing. Your account is now active.",
+    "paymentCancelled": "Payment Cancelled",
+    "paymentCancelledDescription": "Your payment was cancelled. You can try again anytime."
   }
 }
 

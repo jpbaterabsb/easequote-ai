@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
@@ -25,9 +25,10 @@ import { MainLayout } from '@/components/layout/MainLayout'
 const ITEMS_PER_PAGE = 20
 
 export function Dashboard() {
-  useAuth() // Ensure user is authenticated
+  const { refreshSubscription } = useAuth()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
@@ -47,6 +48,30 @@ export function Dashboard() {
   })
 
   const debouncedSearch = useDebounce(filters.search, 300)
+
+  // Handle payment success/cancelled URL params
+  useEffect(() => {
+    const payment = searchParams.get('payment')
+    if (payment === 'success') {
+      toast({
+        title: t('subscription.paymentSuccess') || 'Payment Successful!',
+        description: t('subscription.paymentSuccessDescription') || 'Thank you for subscribing. Your account is now active.',
+      })
+      // Refresh subscription status
+      refreshSubscription()
+      // Remove the param from URL
+      searchParams.delete('payment')
+      setSearchParams(searchParams, { replace: true })
+    } else if (payment === 'cancelled') {
+      toast({
+        title: t('subscription.paymentCancelled') || 'Payment Cancelled',
+        description: t('subscription.paymentCancelledDescription') || 'Your payment was cancelled. You can try again anytime.',
+        variant: 'destructive',
+      })
+      searchParams.delete('payment')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams, toast, t, refreshSubscription])
 
   useEffect(() => {
     fetchQuotes()

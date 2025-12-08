@@ -17,8 +17,8 @@ import { EditQuote } from '@/pages/EditQuote'
 
 function App() {
   return (
-    <ErrorBoundary>
-      <AuthProvider>
+    <AuthProvider>
+      <ErrorBoundary>
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -71,8 +71,8 @@ function App() {
           </Routes>
           <Toaster />
         </BrowserRouter>
-      </AuthProvider>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </AuthProvider>
   )
 }
 

@@ -7,8 +7,9 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
+  const { user, loading, subscriptionLoading } = useAuth()
 
+  // Show loading while checking auth
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -17,10 +18,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
+  // Redirect to login if not authenticated
   if (!user) {
     return <Navigate to="/login" replace />
   }
 
+  // Show loading while checking subscription status (only when user exists)
+  if (subscriptionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Verifying subscription..." />
+      </div>
+    )
+  }
+
+  // Render children - the modal overlay from AuthContext will block interaction
+  // if beta agreement is not accepted or subscription is not active
   return <>{children}</>
 }
 

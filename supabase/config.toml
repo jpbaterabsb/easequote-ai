@@ -1,0 +1,7 @@
+# Supabase Edge Functions Configuration
+
+# stripe-webhook does NOT require JWT authentication
+# Stripe authenticates via the stripe-signature header instead
+[functions.stripe-webhook]
+verify_jwt = false
+

@@ -1,0 +1,631 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
+
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') as string, {
+  apiVersion: '2023-10-16',
+  httpClient: Stripe.createFetchHttpClient(),
+})
+
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') as string
+
+// Create Supabase admin client
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
+
+// Helper function to safely convert Unix timestamp to ISO string
+function safeTimestampToISO(timestamp: number | undefined | null): string | null {
+  if (!timestamp || typeof timestamp !== 'number') {
+    return null
+  }
+  try {
+    return new Date(timestamp * 1000).toISOString()
+  } catch {
+    console.warn('Failed to convert timestamp:', timestamp)
+    return null
+  }
+}
+
+serve(async (req) => {
+  console.log('=== STRIPE-WEBHOOK: Request received ===')
+  console.log('Timestamp:', new Date().toISOString())
+  
+  const signature = req.headers.get('stripe-signature')
+  console.log('Stripe signature present:', !!signature)
+  
+  if (!signature) {
+    console.error('ERROR: No stripe-signature header')
+    return new Response('No signature', { status: 400 })
+  }
+
+  const body = await req.text()
+  console.log('Request body length:', body.length)
+
+  let event: Stripe.Event
+
+  try {
+    console.log('Verifying webhook signature...')
+    console.log('Webhook secret configured:', !!webhookSecret)
+    // Use async version for Deno compatibility
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
+    console.log('Webhook signature verified successfully')
+  } catch (err) {
+    console.error('=== STRIPE-WEBHOOK: Signature verification failed ===')
+    console.error('Error:', err.message)
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 })
+  }
+
+  console.log('=== Processing event ===')
+  console.log('Event ID:', event.id)
+  console.log('Event type:', event.type)
+  console.log('Event created:', new Date(event.created * 1000).toISOString())
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        console.log('--- Handling checkout.session.completed ---')
+        const session = event.data.object as Stripe.Checkout.Session
+        
+        console.log('Session details:', {
+          id: session.id,
+          customer: session.customer,
+          subscription: session.subscription,
+          payment_status: session.payment_status,
+          mode: session.mode,
+          metadata: session.metadata,
+        })
+        
+        // Try to get user ID from various sources
+        let userId = session.metadata?.supabase_user_id
+        console.log('User ID from session metadata:', userId)
+        
+        // Fallback: try subscription metadata
+        if (!userId && session.subscription && typeof session.subscription === 'object') {
+          userId = session.subscription.metadata?.supabase_user_id
+          console.log('User ID from subscription metadata:', userId)
+        }
+        
+        // Fallback: lookup by customer ID
+        if (!userId && session.customer) {
+          console.log('No user ID in metadata, looking up by customer ID...')
+          const customerId = typeof session.customer === 'string' 
+            ? session.customer 
+            : session.customer.id
+          
+          const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single()
+          
+          userId = profile?.id
+          console.log('Found user ID by customer lookup:', userId)
+        }
+        
+        if (userId && session.subscription) {
+          console.log('Fetching subscription details from Stripe...')
+          const subscriptionId = typeof session.subscription === 'string' 
+            ? session.subscription 
+            : session.subscription.id
+          console.log('Subscription ID:', subscriptionId)
+          
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          console.log('Subscription retrieved:', {
+            id: subscription.id,
+            status: subscription.status,
+            customer: subscription.customer,
+            current_period_end: safeTimestampToISO(subscription.current_period_end),
+          })
+          
+          // Note: At this point status might be 'incomplete' if payment is still processing
+          // The invoice.paid event will update it to 'active' when payment confirms
+          await updateSubscriptionStatus(userId, subscription)
+        } else {
+          console.warn('WARNING: Could not process checkout - missing userId or subscription')
+          console.warn('userId:', userId)
+          console.warn('subscription:', session.subscription)
+        }
+        break
+      }
+
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        console.log(`--- Handling ${event.type} ---`)
+        const subscription = event.data.object as Stripe.Subscription
+        
+        console.log('Subscription details:', {
+          id: subscription.id,
+          status: subscription.status,
+          customer: subscription.customer,
+          metadata: subscription.metadata,
+          current_period_end: safeTimestampToISO(subscription.current_period_end),
+          items: subscription.items?.data?.map(item => ({
+            price_id: item.price?.id,
+            product_id: item.price?.product,
+          })) || [],
+        })
+        
+        const userId = subscription.metadata?.supabase_user_id
+        console.log('User ID from metadata:', userId)
+        
+        if (userId) {
+          await updateSubscriptionStatus(userId, subscription)
+        } else {
+          console.log('No user ID in metadata, looking up by customer ID...')
+          const customerId = typeof subscription.customer === 'string' 
+            ? subscription.customer 
+            : subscription.customer.id
+          console.log('Customer ID:', customerId)
+          
+          const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single()
+          
+          if (profileError) {
+            console.error('ERROR: Could not find profile by customer ID:', profileError.message)
+          } else if (profile) {
+            console.log('Found profile by customer ID:', profile.id)
+            await updateSubscriptionStatus(profile.id, subscription)
+          } else {
+            console.warn('WARNING: No profile found for customer ID:', customerId)
+          }
+        }
+        break
+      }
+
+      case 'customer.subscription.deleted': {
+        console.log('--- Handling customer.subscription.deleted ---')
+        const subscription = event.data.object as Stripe.Subscription
+        
+        console.log('Deleted subscription details:', {
+          id: subscription.id,
+          status: subscription.status,
+          customer: subscription.customer,
+          metadata: subscription.metadata,
+        })
+        
+        const userId = subscription.metadata?.supabase_user_id
+        console.log('User ID from metadata:', userId)
+        
+        let userIdToUpdate = userId
+        
+        if (!userIdToUpdate) {
+          console.log('No user ID in metadata, looking up by customer ID...')
+          const customerId = typeof subscription.customer === 'string' 
+            ? subscription.customer 
+            : subscription.customer.id
+          console.log('Customer ID:', customerId)
+          
+          const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single()
+          
+          if (profileError) {
+            console.error('ERROR: Could not find profile:', profileError.message)
+          }
+          
+          userIdToUpdate = profile?.id
+          console.log('Found user ID:', userIdToUpdate)
+        }
+        
+        if (userIdToUpdate) {
+          // Note: Keep subscription_id and subscription_end_date so user has access until period ends
+          console.log('Updating profile to canceled status (user keeps access until end_date)...')
+          const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({
+              subscription_status: 'canceled',
+              // Don't clear subscription_id - we need it to track the subscription
+              // Don't change subscription_end_date - user has access until this date
+            })
+            .eq('id', userIdToUpdate)
+          
+          if (updateError) {
+            console.error('ERROR: Failed to update profile:', updateError.message)
+          } else {
+            console.log('Profile updated to canceled status for user:', userIdToUpdate)
+          }
+        } else {
+          console.warn('WARNING: Could not find user to update')
+        }
+        break
+      }
+
+      // invoice.paid is the KEY event that confirms payment completed
+      // This is when subscription changes from 'incomplete' to 'active'
+      case 'invoice.paid': {
+        console.log('===========================================')
+        console.log('--- Handling invoice.paid (KEY EVENT) ---')
+        console.log('===========================================')
+        const invoice = event.data.object as Stripe.Invoice
+        
+        console.log('Paid invoice details:', {
+          id: invoice.id,
+          customer: invoice.customer,
+          subscription: invoice.subscription,
+          amount_paid: invoice.amount_paid,
+          status: invoice.status,
+          billing_reason: invoice.billing_reason,
+        })
+        
+        // Check if invoice has period_end directly
+        console.log('Invoice additional fields:')
+        console.log('  invoice.period_end:', (invoice as any).period_end)
+        console.log('  invoice.period_start:', (invoice as any).period_start)
+        console.log('  invoice.lines:', (invoice as any).lines?.data?.length)
+        console.log('  invoice.lines data:', JSON.stringify((invoice as any).lines?.data, null, 2))
+        
+        // Get subscription ID from various locations (Stripe API 2025-11-17 structure)
+        let subscriptionId: string | undefined
+        let periodEnd: number | undefined
+        let userId: string | undefined
+        
+        const invoiceAny = invoice as any
+        
+        // Method 1: Direct on invoice (older API versions)
+        if (invoice.subscription) {
+          subscriptionId = typeof invoice.subscription === 'string' 
+            ? invoice.subscription 
+            : invoice.subscription.id
+          console.log('Found subscription directly on invoice:', subscriptionId)
+        }
+        
+        // Method 2: From invoice.parent.subscription_details (new API 2025-11-17)
+        if (!subscriptionId && invoiceAny.parent?.subscription_details?.subscription) {
+          subscriptionId = invoiceAny.parent.subscription_details.subscription
+          console.log('Found subscription in parent.subscription_details:', subscriptionId)
+          
+          // Also get user ID from here
+          if (invoiceAny.parent.subscription_details.metadata?.supabase_user_id) {
+            userId = invoiceAny.parent.subscription_details.metadata.supabase_user_id
+            console.log('Found user ID in parent metadata:', userId)
+          }
+        }
+        
+        // Method 3: From line items
+        const lines = invoiceAny.lines?.data
+        if (lines && lines.length > 0) {
+          const lineItem = lines[0]
+          
+          // Get subscription from line item
+          if (!subscriptionId && lineItem.parent?.subscription_item_details?.subscription) {
+            subscriptionId = lineItem.parent.subscription_item_details.subscription
+            console.log('Found subscription in line item:', subscriptionId)
+          }
+          
+          // Get period end from line item
+          if (lineItem.period?.end) {
+            periodEnd = lineItem.period.end
+            console.log('Found period.end in line item:', periodEnd, '=', new Date(periodEnd * 1000).toISOString())
+          }
+          
+          // Get user ID from line item metadata
+          if (!userId && lineItem.metadata?.supabase_user_id) {
+            userId = lineItem.metadata.supabase_user_id
+            console.log('Found user ID in line item metadata:', userId)
+          }
+        }
+        
+        // Method 4: List customer subscriptions as last resort
+        if (!subscriptionId && invoice.customer) {
+          console.log('No subscription found, searching customer subscriptions...')
+          const customerId = typeof invoice.customer === 'string' 
+            ? invoice.customer 
+            : invoice.customer.id
+          
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            limit: 1,
+            status: 'all',
+          })
+          
+          if (subscriptions.data.length > 0) {
+            subscriptionId = subscriptions.data[0].id
+            console.log('Found subscription via customer lookup:', subscriptionId)
+          }
+        }
+        
+        console.log('Final extracted values:')
+        console.log('  - subscriptionId:', subscriptionId)
+        console.log('  - periodEnd:', periodEnd)
+        console.log('  - userId:', userId)
+        
+        if (subscriptionId) {
+          console.log('Fetching subscription details from Stripe API...')
+          console.log('Subscription ID to fetch:', subscriptionId)
+          
+          // Fetch subscription with price data
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+            expand: ['items.data.price'],
+          })
+          
+          console.log('Subscription fetched:')
+          console.log('  - id:', subscription.id)
+          console.log('  - status:', subscription.status)
+          console.log('  - current_period_end from API:', subscription.current_period_end)
+          
+          // Use periodEnd from invoice if subscription doesn't have it
+          const finalPeriodEnd = subscription.current_period_end || periodEnd
+          console.log('  - finalPeriodEnd to use:', finalPeriodEnd)
+          
+          // Try to get user ID from multiple sources
+          if (!userId) {
+            userId = subscription.metadata?.supabase_user_id
+            console.log('User ID from subscription metadata:', userId)
+          }
+          
+          // Fallback: lookup by customer ID
+          if (!userId) {
+            console.log('No user ID in metadata, looking up by customer ID...')
+            const customerId = typeof subscription.customer === 'string' 
+              ? subscription.customer 
+              : (subscription.customer as any)?.id
+            console.log('Customer ID for lookup:', customerId)
+            
+            if (customerId) {
+              const { data: profile, error: lookupError } = await supabaseAdmin
+                .from('profiles')
+                .select('id, stripe_customer_id')
+                .eq('stripe_customer_id', customerId)
+                .single()
+              
+              if (lookupError) {
+                console.error('ERROR looking up profile by customer_id:', lookupError.message)
+              } else {
+                console.log('Found profile:', profile)
+                userId = profile?.id
+              }
+            }
+          }
+          
+          console.log('Final user ID to update:', userId)
+          
+          if (userId) {
+            console.log('Calling updateSubscriptionStatusWithPeriod...')
+            // Pass the period end we extracted from the invoice
+            await updateSubscriptionStatusWithPeriod(userId, subscription, finalPeriodEnd)
+          } else {
+            console.error('ERROR: Could not find user ID for invoice.paid event')
+            console.error('Subscription customer:', subscription.customer)
+            console.error('Subscription metadata:', subscription.metadata)
+          }
+        } else {
+          console.log('Could not find subscription ID from invoice - skipping')
+          console.log('This might be a one-time invoice, not a subscription')
+        }
+        break
+      }
+
+      case 'invoice.payment_succeeded': {
+        console.log('--- Handling invoice.payment_succeeded ---')
+        const invoice = event.data.object as Stripe.Invoice
+        
+        console.log('Invoice details:', {
+          id: invoice.id,
+          customer: invoice.customer,
+          subscription: invoice.subscription,
+          amount_paid: invoice.amount_paid,
+          status: invoice.status,
+        })
+        
+        if (invoice.subscription) {
+          console.log('Fetching subscription details...')
+          const subscriptionId = typeof invoice.subscription === 'string' 
+            ? invoice.subscription 
+            : invoice.subscription.id
+          
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          console.log('Subscription status:', subscription.status)
+          
+          // Try to get user ID from subscription metadata
+          let userId = subscription.metadata?.supabase_user_id
+          console.log('User ID from subscription metadata:', userId)
+          
+          // Fallback: lookup by customer ID
+          if (!userId) {
+            console.log('No user ID in metadata, looking up by customer ID...')
+            const customerId = typeof invoice.customer === 'string' 
+              ? invoice.customer 
+              : invoice.customer?.id
+            
+            if (customerId) {
+              const { data: profile } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('stripe_customer_id', customerId)
+                .single()
+              
+              userId = profile?.id
+              console.log('Found user ID by customer lookup:', userId)
+            }
+          }
+          
+          if (userId) {
+            await updateSubscriptionStatus(userId, subscription)
+          } else {
+            console.warn('WARNING: No user ID found for invoice.payment_succeeded')
+          }
+        } else {
+          console.log('Invoice has no subscription - skipping')
+        }
+        break
+      }
+
+      case 'invoice.payment_failed': {
+        console.log('--- Handling invoice.payment_failed ---')
+        const invoice = event.data.object as Stripe.Invoice
+        
+        console.log('Failed invoice details:', {
+          id: invoice.id,
+          customer: invoice.customer,
+          subscription: invoice.subscription,
+          amount_due: invoice.amount_due,
+        })
+        
+        const customerId = typeof invoice.customer === 'string' 
+          ? invoice.customer 
+          : invoice.customer?.id
+        
+        if (customerId) {
+          const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single()
+          
+          if (profileError) {
+            console.error('ERROR: Could not find profile:', profileError.message)
+          } else if (profile) {
+            console.log('Updating profile to past_due status...')
+            const { error: updateError } = await supabaseAdmin
+              .from('profiles')
+              .update({ subscription_status: 'past_due' })
+              .eq('id', profile.id)
+            
+            if (updateError) {
+              console.error('ERROR: Failed to update profile:', updateError.message)
+            } else {
+              console.log('Profile updated to past_due for user:', profile.id)
+            }
+          }
+        }
+        break
+      }
+
+      default:
+        console.log('Unhandled event type:', event.type)
+    }
+
+    console.log('=== STRIPE-WEBHOOK: Success ===')
+    return new Response(JSON.stringify({ received: true }), {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
+    })
+  } catch (error) {
+    console.error('=== STRIPE-WEBHOOK: Error ===')
+    console.error('Error type:', error.constructor.name)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
+    return new Response(
+      JSON.stringify({ error: 'Webhook handler failed' }),
+      { status: 500 }
+    )
+  }
+})
+
+// New function that accepts period end as parameter (for invoice.paid events)
+async function updateSubscriptionStatusWithPeriod(
+  userId: string, 
+  subscription: Stripe.Subscription,
+  periodEndTimestamp: number | undefined
+) {
+  console.log('===========================================')
+  console.log('--- updateSubscriptionStatusWithPeriod ---')
+  console.log('===========================================')
+  console.log('User ID:', userId)
+  console.log('Subscription ID:', subscription.id)
+  console.log('Subscription Status:', subscription.status)
+  console.log('Period End Timestamp:', periodEndTimestamp)
+  
+  const status = subscription.status
+  const currentPeriodEnd = safeTimestampToISO(periodEndTimestamp || subscription.current_period_end)
+  const priceId = subscription.items?.data?.[0]?.price?.id || 
+                  (subscription as any).plan?.id || 
+                  null
+  const planName = 'pro'
+  
+  console.log('Values for database update:')
+  console.log('  - subscription_status:', status)
+  console.log('  - subscription_id:', subscription.id)
+  console.log('  - subscription_end_date:', currentPeriodEnd)
+  console.log('  - subscription_plan:', planName)
+  console.log('  - stripe_price_id:', priceId)
+  
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      subscription_status: status,
+      subscription_id: subscription.id,
+      subscription_end_date: currentPeriodEnd,
+      subscription_plan: planName,
+      stripe_price_id: priceId,
+    })
+    .eq('id', userId)
+    .select()
+  
+  if (error) {
+    console.error('DATABASE UPDATE FAILED!')
+    console.error('Error:', error.message)
+    console.error('Details:', JSON.stringify(error, null, 2))
+  } else {
+    console.log('DATABASE UPDATE SUCCESS!')
+    console.log('Updated:', JSON.stringify(data, null, 2))
+  }
+}
+
+// Original function for other events (subscription.created, subscription.updated, etc)
+async function updateSubscriptionStatus(userId: string, subscription: Stripe.Subscription) {
+  console.log('===========================================')
+  console.log('--- updateSubscriptionStatus CALLED ---')
+  console.log('===========================================')
+  console.log('User ID:', userId)
+  console.log('Subscription ID:', subscription.id)
+  console.log('Subscription Status:', subscription.status)
+  console.log('current_period_end:', subscription.current_period_end)
+  
+  const status = subscription.status
+  let periodEndTimestamp = subscription.current_period_end
+  
+  // If no period end, try to calculate from interval
+  if (!periodEndTimestamp && subscription.current_period_start) {
+    const interval = subscription.items?.data?.[0]?.price?.recurring?.interval
+    const intervalCount = subscription.items?.data?.[0]?.price?.recurring?.interval_count || 1
+    const startDate = new Date(subscription.current_period_start * 1000)
+    
+    if (interval === 'month') {
+      startDate.setMonth(startDate.getMonth() + intervalCount)
+      periodEndTimestamp = Math.floor(startDate.getTime() / 1000)
+    } else if (interval === 'year') {
+      startDate.setFullYear(startDate.getFullYear() + intervalCount)
+      periodEndTimestamp = Math.floor(startDate.getTime() / 1000)
+    }
+    console.log('Calculated period_end:', periodEndTimestamp)
+  }
+  
+  const currentPeriodEnd = safeTimestampToISO(periodEndTimestamp)
+  const priceId = subscription.items?.data?.[0]?.price?.id || null
+  const planName = 'pro'
+  
+  console.log('Values for database update:')
+  console.log('  - subscription_status:', status)
+  console.log('  - subscription_id:', subscription.id)
+  console.log('  - subscription_end_date:', currentPeriodEnd)
+  console.log('  - stripe_price_id:', priceId)
+  
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      subscription_status: status,
+      subscription_id: subscription.id,
+      subscription_end_date: currentPeriodEnd,
+      subscription_plan: planName,
+      stripe_price_id: priceId,
+    })
+    .eq('id', userId)
+    .select()
+  
+  if (error) {
+    console.error('DATABASE UPDATE FAILED!')
+    console.error('Error:', error.message)
+  } else {
+    console.log('DATABASE UPDATE SUCCESS!')
+    console.log('Updated:', JSON.stringify(data, null, 2))
+  }
+}
+
