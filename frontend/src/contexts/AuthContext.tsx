@@ -1,9 +1,33 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, Component, type ReactNode, type ErrorInfo } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth-store'
 import { BetaAgreementModal } from '@/components/ui/beta-agreement-modal'
 import { SubscriptionRequiredModal } from '@/components/ui/subscription-required-modal'
+
+// Simple error boundary for modals to prevent crashes from breaking the entire app
+class ModalErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Modal error caught:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Silently fail - don't show modal if there's an error
+      return null
+    }
+    return this.props.children
+  }
+}
 
 const BETA_AGREEMENT_KEY = 'easequote_beta_agreement_accepted'
 const BETA_AGREEMENT_VERSION = '1.0' // Increment this to force re-acceptance
@@ -245,12 +269,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshSubscription,
     }}>
       {children}
-      <BetaAgreementModal open={showBetaModal} onAccept={handleBetaAccept} />
-      <SubscriptionRequiredModal 
-        open={showSubscriptionModal && !showBetaModal} 
-        onSignOut={signOut}
-        userEmail={user?.email}
-      />
+      {/* Wrap modals in error boundary to prevent Portal errors from crashing the app */}
+      <ModalErrorBoundary>
+        <BetaAgreementModal open={showBetaModal} onAccept={handleBetaAccept} />
+        <SubscriptionRequiredModal 
+          open={showSubscriptionModal && !showBetaModal} 
+          onSignOut={signOut}
+          userEmail={user?.email}
+        />
+      </ModalErrorBoundary>
     </AuthContext.Provider>
   )
 }
