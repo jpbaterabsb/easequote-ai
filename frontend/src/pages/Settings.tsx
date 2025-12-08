@@ -19,6 +19,8 @@ import { useToast } from '@/hooks/useToast'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useTranslation } from '@/hooks/useTranslation'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { AlertTriangle, Calendar, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
@@ -42,12 +44,17 @@ type ProfileFormData = z.infer<typeof profileSchema>
 type PasswordFormData = z.infer<typeof passwordSchema>
 
 function SettingsContent() {
-  const { user } = useAuth()
+  const { user, refreshSubscription } = useAuth()
   const { toast } = useToast()
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [showCancelSubscriptionDialog, setShowCancelSubscriptionDialog] = useState(false)
+  const [showReactivateDialog, setShowReactivateDialog] = useState(false)
+  const [cancelingSubscription, setCancelingSubscription] = useState(false)
+  const [reactivatingSubscription, setReactivatingSubscription] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly')
   const [hasChanges, setHasChanges] = useState(false)
   const [newPassword, setNewPassword] = useState('')
 
@@ -274,6 +281,223 @@ function SettingsContent() {
     if (error) throw error
   }
 
+  const handleCancelSubscription = async () => {
+    setCancelingSubscription(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No session')
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-subscription`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ cancelImmediately: false }),
+        }
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to cancel subscription')
+      }
+
+      toast({
+        variant: 'success',
+        title: t('settings.subscriptionCanceled'),
+        description: result.message,
+      })
+
+      setShowCancelSubscriptionDialog(false)
+      
+      // Wait for Stripe webhook to process and update our database
+      // Stripe sends webhook events within seconds
+      console.log('Waiting for Stripe webhook to update database...')
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Reload profile with fresh data
+      await loadProfile()
+      await refreshSubscription()
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: t('common.error'),
+        description: error.message || t('settings.failedToCancelSubscription'),
+      })
+    } finally {
+      setCancelingSubscription(false)
+    }
+  }
+
+  // Helper functions for subscription display
+  const getPlanName = () => {
+    if (!profile?.stripe_price_id) return 'No Plan'
+    
+    const monthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY
+    const yearlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID_YEARLY
+    
+    if (profile.stripe_price_id === monthlyPriceId) return 'Pro Monthly'
+    if (profile.stripe_price_id === yearlyPriceId) return 'Pro Annual'
+    
+    // Fallback to subscription_plan field
+    if (profile.subscription_plan === 'pro') return 'Pro'
+    if (profile.subscription_plan === 'gold') return 'Gold'
+    
+    return profile.subscription_plan || 'Pro'
+  }
+
+  const getPlanPrice = () => {
+    const monthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY
+    const yearlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID_YEARLY
+    
+    if (profile?.stripe_price_id === monthlyPriceId) return '$29.90/month'
+    if (profile?.stripe_price_id === yearlyPriceId) return '$319.90/year'
+    
+    return ''
+  }
+
+  const getStatusBadge = () => {
+    const status = profile?.subscription_status
+    
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle className="w-3 h-3 mr-1" /> {t('settings.statusActive')}</Badge>
+      case 'canceled':
+        return <Badge className="bg-red-500 hover:bg-red-600"><XCircle className="w-3 h-3 mr-1" /> {t('settings.statusCanceled')}</Badge>
+      case 'past_due':
+        return <Badge className="bg-red-500 hover:bg-red-600"><AlertTriangle className="w-3 h-3 mr-1" /> {t('settings.statusPastDue')}</Badge>
+      case 'incomplete':
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600"><Clock className="w-3 h-3 mr-1" /> {t('settings.statusIncomplete')}</Badge>
+      case 'trialing':
+        return <Badge className="bg-blue-500 hover:bg-blue-600"><Clock className="w-3 h-3 mr-1" /> {t('settings.statusTrial')}</Badge>
+      default:
+        return <Badge variant="secondary"><XCircle className="w-3 h-3 mr-1" /> {t('settings.statusInactive')}</Badge>
+    }
+  }
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  const isSubscriptionActive = () => {
+    const status = profile?.subscription_status
+    return status === 'active' || status === 'trialing'
+  }
+
+  const isSubscriptionCanceled = () => {
+    return profile?.subscription_status === 'canceled'
+  }
+
+  const handleReactivateSubscription = async () => {
+    setReactivatingSubscription(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No session')
+
+      // First, try to reactivate the existing subscription (if it's just scheduled to cancel)
+      const reactivateResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reactivate-subscription`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      )
+
+      const reactivateResult = await reactivateResponse.json()
+
+      if (!reactivateResponse.ok) {
+        throw new Error(reactivateResult.error || 'Failed to reactivate subscription')
+      }
+
+      // If reactivation was successful (subscription was just scheduled to cancel)
+      if (reactivateResult.reactivated) {
+        toast({
+          variant: 'success',
+          title: t('settings.subscriptionReactivated'),
+          description: t('settings.subscriptionReactivatedNoPayment'),
+        })
+        setShowReactivateDialog(false)
+        
+        // Wait for Stripe webhook to update database
+        console.log('Waiting for Stripe webhook to update database...')
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        await loadProfile()
+        await refreshSubscription()
+        return
+      }
+
+      // If subscription is already active
+      if (reactivateResult.success && !reactivateResult.needsNewSubscription) {
+        toast({
+          variant: 'success',
+          title: t('settings.subscriptionAlreadyActive'),
+          description: reactivateResult.message,
+        })
+        setShowReactivateDialog(false)
+        await loadProfile()
+        await refreshSubscription()
+        return
+      }
+
+      // If we need a new subscription, create a checkout session
+      if (reactivateResult.needsNewSubscription) {
+        const priceId = selectedPlan === 'monthly' 
+          ? import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY 
+          : import.meta.env.VITE_STRIPE_PRICE_ID_YEARLY
+
+        if (!priceId) {
+          throw new Error('Price ID not configured')
+        }
+
+        const checkoutResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              priceId,
+              successUrl: `${window.location.origin}/settings?payment=success`,
+              cancelUrl: `${window.location.origin}/settings?payment=cancelled`,
+            }),
+          }
+        )
+
+        const checkoutResult = await checkoutResponse.json()
+
+        if (!checkoutResponse.ok) {
+          throw new Error(checkoutResult.error || 'Failed to create checkout session')
+        }
+
+        if (checkoutResult.url) {
+          window.location.href = checkoutResult.url
+        }
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: t('common.error'),
+        description: error.message || 'Failed to reactivate subscription',
+      })
+    } finally {
+      setReactivatingSubscription(false)
+    }
+  }
+
   return (
     <ProtectedRoute>
       <MainLayout>
@@ -285,10 +509,11 @@ function SettingsContent() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="profile" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="profile">{t('settings.profile')}</TabsTrigger>
                   <TabsTrigger value="password">{t('settings.password')}</TabsTrigger>
                   <TabsTrigger value="branding">{t('settings.branding')}</TabsTrigger>
+                  <TabsTrigger value="subscription">{t('settings.subscription')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profile" className="space-y-4 mt-6">
@@ -484,6 +709,134 @@ function SettingsContent() {
                     </p>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="subscription" className="space-y-6 mt-6">
+                  <div className="space-y-6">
+                    {/* Canceled Subscription Warning */}
+                    {isSubscriptionCanceled() && (
+                      <div className="rounded-xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 rounded-full bg-amber-100">
+                            <AlertTriangle className="w-6 h-6 text-amber-600" />
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <h3 className="font-semibold text-amber-800">
+                              {t('settings.subscriptionCanceledTitle')}
+                            </h3>
+                            <p className="text-sm text-amber-700">
+                              {t('settings.subscriptionCanceledMessage', { date: formatDate(profile?.subscription_end_date) })}
+                            </p>
+                            <Button
+                              onClick={() => setShowReactivateDialog(true)}
+                              className="mt-3 bg-primary hover:bg-primary/90"
+                            >
+                              <CreditCard className="w-4 h-4 mr-2" />
+                              {t('settings.reactivateSubscription')}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Current Plan Card */}
+                    <div className={`rounded-xl border-2 p-6 shadow-sm ${
+                      isSubscriptionCanceled() 
+                        ? 'border-gray-200 bg-gray-50' 
+                        : 'border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10'
+                    }`}>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-700">
+                            <CreditCard className="w-5 h-5 text-primary" />
+                            {t('settings.currentPlan')}
+                          </h3>
+                          <p className={`text-2xl font-bold ${isSubscriptionCanceled() ? 'text-gray-500' : 'text-primary'}`}>
+                            {getPlanName()}
+                          </p>
+                          <p className="text-muted-foreground text-sm">
+                            {getPlanPrice()}
+                          </p>
+                        </div>
+                        <div>
+                          {getStatusBadge()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Subscription Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="w-4 h-4 text-primary/70" />
+                          <span className="text-sm font-medium">{t('settings.subscriptionStartDate')}</span>
+                        </div>
+                        <p className="text-lg font-semibold text-gray-800">
+                          {formatDate(profile?.created_at)}
+                        </p>
+                      </div>
+
+                      <div className={`rounded-xl border p-4 space-y-2 ${
+                        isSubscriptionCanceled() 
+                          ? 'border-amber-200 bg-amber-50/50' 
+                          : 'border-gray-100 bg-gray-50/50'
+                      }`}>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className={`w-4 h-4 ${isSubscriptionCanceled() ? 'text-amber-600' : 'text-primary/70'}`} />
+                          <span className="text-sm font-medium">
+                            {isSubscriptionCanceled() 
+                              ? t('settings.accessUntil')
+                              : t('settings.nextBillingDate')}
+                          </span>
+                        </div>
+                        <p className={`text-lg font-semibold ${isSubscriptionCanceled() ? 'text-amber-700' : 'text-gray-800'}`}>
+                          {formatDate(profile?.subscription_end_date)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Subscription ID (for support) */}
+                    {profile?.subscription_id && (
+                      <div className="rounded-xl border border-gray-100 bg-gray-50/30 p-4">
+                        <p className="text-xs text-muted-foreground mb-1">{t('settings.subscriptionId')}</p>
+                        <code className="text-sm font-mono text-gray-600">
+                          {profile.subscription_id}
+                        </code>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+                      {isSubscriptionActive() && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowCancelSubscriptionDialog(true)}
+                          className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          {t('settings.cancelSubscription')}
+                        </Button>
+                      )}
+                      
+                      {isSubscriptionCanceled() && (
+                        <Button
+                          onClick={() => setShowReactivateDialog(true)}
+                          className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          {t('settings.reactivateSubscription')}
+                        </Button>
+                      )}
+
+                      {!profile?.subscription_id && (
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                          <p className="text-sm text-primary/80">
+                            {t('settings.noActiveSubscription')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
@@ -510,6 +863,161 @@ function SettingsContent() {
                 }}
               >
                 {t('settings.discardChanges')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Cancel Subscription Dialog */}
+        <Dialog open={showCancelSubscriptionDialog} onOpenChange={setShowCancelSubscriptionDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle className="w-5 h-5" />
+                {t('settings.cancelSubscriptionTitle')}
+              </DialogTitle>
+              <DialogDescription className="text-left space-y-3 pt-2">
+                <p className="text-gray-600">{t('settings.cancelSubscriptionWarning')}</p>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+                  <p className="font-medium text-sm text-gray-700">{t('settings.whatHappensNext')}</p>
+                  <ul className="text-sm space-y-1.5 text-gray-600">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>{t('settings.cancelBullet1')}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>{t('settings.cancelBullet2')}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>{t('settings.cancelBullet3')}</span>
+                    </li>
+                  </ul>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCancelSubscriptionDialog(false)}
+                disabled={cancelingSubscription}
+                className="w-full sm:w-auto border-gray-200"
+              >
+                {t('settings.keepSubscription')}
+              </Button>
+              <Button
+                onClick={handleCancelSubscription}
+                disabled={cancelingSubscription}
+                className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white"
+              >
+                {cancelingSubscription ? t('settings.canceling') : t('settings.confirmCancel')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reactivate Subscription Dialog */}
+        <Dialog open={showReactivateDialog} onOpenChange={setShowReactivateDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-primary">
+                <CreditCard className="w-5 h-5" />
+                {t('settings.reactivateSubscriptionTitle')}
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 pt-1">
+                {t('settings.reactivateSubscriptionDescription')}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Plan Selection */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Monthly Plan */}
+                <button
+                  onClick={() => setSelectedPlan('monthly')}
+                  disabled={reactivatingSubscription}
+                  className={`relative rounded-xl border-2 p-4 text-left transition-all hover:border-primary/50 ${
+                    selectedPlan === 'monthly' 
+                      ? 'border-primary bg-primary/5 shadow-md' 
+                      : 'border-gray-100 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm">{t('settings.monthlyPlan')}</p>
+                    <p className="text-2xl font-bold text-primary">$29.90</p>
+                    <p className="text-xs text-muted-foreground">/month</p>
+                  </div>
+                  {selectedPlan === 'monthly' && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
+                </button>
+
+                {/* Yearly Plan */}
+                <button
+                  onClick={() => setSelectedPlan('yearly')}
+                  disabled={reactivatingSubscription}
+                  className={`relative rounded-xl border-2 p-4 text-left transition-all hover:border-primary/50 ${
+                    selectedPlan === 'yearly' 
+                      ? 'border-primary bg-primary/5 shadow-md' 
+                      : 'border-gray-100 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                    <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      SAVE $38.90
+                    </span>
+                  </div>
+                  <div className="space-y-1 pt-1">
+                    <p className="font-semibold text-sm">{t('settings.yearlyPlan')}</p>
+                    <p className="text-2xl font-bold text-primary">$319.90</p>
+                    <p className="text-xs text-muted-foreground">/year ($26.66/mo)</p>
+                  </div>
+                  {selectedPlan === 'yearly' && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* Features */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="font-medium text-sm text-gray-700 mb-2">{t('settings.includedFeatures')}</p>
+                <ul className="text-sm space-y-1.5 text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span>{t('settings.feature1')}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span>{t('settings.feature2')}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span>{t('settings.feature3')}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowReactivateDialog(false)}
+                disabled={reactivatingSubscription}
+                className="w-full sm:w-auto border-gray-200"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleReactivateSubscription}
+                disabled={reactivatingSubscription}
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+              >
+                {reactivatingSubscription ? t('settings.processing') : t('settings.continueToPayment')}
               </Button>
             </DialogFooter>
           </DialogContent>

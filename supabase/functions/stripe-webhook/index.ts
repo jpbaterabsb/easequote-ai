@@ -520,37 +520,71 @@ serve(async (req) => {
 })
 
 // New function that accepts period end as parameter (for invoice.paid events)
+/**
+ * Update subscription status with explicit period end timestamp
+ * Used primarily by invoice.paid event where we extract period from invoice lines
+ * 
+ * Same logic as updateSubscriptionStatus - check cancel_at_period_end
+ */
 async function updateSubscriptionStatusWithPeriod(
   userId: string, 
   subscription: Stripe.Subscription,
-  periodEndTimestamp: number | undefined
+  periodEndFromInvoice: number | undefined
 ) {
   console.log('===========================================')
   console.log('--- updateSubscriptionStatusWithPeriod ---')
   console.log('===========================================')
   console.log('User ID:', userId)
   console.log('Subscription ID:', subscription.id)
-  console.log('Subscription Status:', subscription.status)
-  console.log('Period End Timestamp:', periodEndTimestamp)
+  console.log('Stripe Status:', subscription.status)
+  console.log('cancel_at_period_end:', subscription.cancel_at_period_end)
+  console.log('Period End from Invoice:', periodEndFromInvoice)
   
-  const status = subscription.status
-  const currentPeriodEnd = safeTimestampToISO(periodEndTimestamp || subscription.current_period_end)
+  // Determine our internal status based on Stripe's data
+  let internalStatus: string
+  
+  if (subscription.status === 'active' && subscription.cancel_at_period_end) {
+    internalStatus = 'canceled'
+    console.log('→ Mapping to "canceled" (scheduled cancellation)')
+  } else if (subscription.status === 'active') {
+    internalStatus = 'active'
+    console.log('→ Mapping to "active"')
+  } else {
+    internalStatus = subscription.status
+    console.log(`→ Using Stripe status directly: "${internalStatus}"`)
+  }
+  
+  // Get period end timestamp - priority: invoice period > cancel_at > items > root
+  let periodEndTimestamp: number | null = periodEndFromInvoice || null
+  
+  if (!periodEndTimestamp && subscription.cancel_at_period_end && (subscription as any).cancel_at) {
+    periodEndTimestamp = (subscription as any).cancel_at
+    console.log('Using cancel_at:', periodEndTimestamp)
+  }
+  
+  if (!periodEndTimestamp) {
+    periodEndTimestamp = subscription.items?.data?.[0]?.current_period_end || 
+                         subscription.current_period_end || 
+                         null
+    console.log('Using subscription period_end:', periodEndTimestamp)
+  }
+  
+  const currentPeriodEnd = safeTimestampToISO(periodEndTimestamp)
   const priceId = subscription.items?.data?.[0]?.price?.id || 
                   (subscription as any).plan?.id || 
                   null
   const planName = 'pro'
   
-  console.log('Values for database update:')
-  console.log('  - subscription_status:', status)
-  console.log('  - subscription_id:', subscription.id)
-  console.log('  - subscription_end_date:', currentPeriodEnd)
-  console.log('  - subscription_plan:', planName)
-  console.log('  - stripe_price_id:', priceId)
+  console.log('=== Database Update Values ===')
+  console.log('  subscription_status:', internalStatus)
+  console.log('  subscription_id:', subscription.id)
+  console.log('  subscription_end_date:', currentPeriodEnd)
+  console.log('  stripe_price_id:', priceId)
   
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .update({
-      subscription_status: status,
+      subscription_status: internalStatus,
       subscription_id: subscription.id,
       subscription_end_date: currentPeriodEnd,
       subscription_plan: planName,
@@ -569,20 +603,73 @@ async function updateSubscriptionStatusWithPeriod(
   }
 }
 
-// Original function for other events (subscription.created, subscription.updated, etc)
+/**
+ * Main function to update subscription status in database
+ * 
+ * IMPORTANT: Stripe is the single source of truth.
+ * This function interprets Stripe's data and maps it to our database schema.
+ * 
+ * Key logic:
+ * - If Stripe status is 'active' BUT cancel_at_period_end is true → we set 'canceled'
+ *   (User scheduled cancellation but still has access until period end)
+ * - If Stripe status is 'active' AND cancel_at_period_end is false → we set 'active'
+ * - All other Stripe statuses map directly (canceled, past_due, unpaid, etc.)
+ */
 async function updateSubscriptionStatus(userId: string, subscription: Stripe.Subscription) {
   console.log('===========================================')
-  console.log('--- updateSubscriptionStatus CALLED ---')
+  console.log('--- updateSubscriptionStatus ---')
   console.log('===========================================')
   console.log('User ID:', userId)
   console.log('Subscription ID:', subscription.id)
-  console.log('Subscription Status:', subscription.status)
-  console.log('current_period_end:', subscription.current_period_end)
+  console.log('Stripe Status:', subscription.status)
+  console.log('cancel_at_period_end:', subscription.cancel_at_period_end)
+  console.log('cancel_at:', (subscription as any).cancel_at)
+  console.log('current_period_end (root):', subscription.current_period_end)
+  console.log('items[0].current_period_end:', subscription.items?.data?.[0]?.current_period_end)
   
-  const status = subscription.status
-  let periodEndTimestamp = subscription.current_period_end
+  // Determine our internal status based on Stripe's data
+  let internalStatus: string
   
-  // If no period end, try to calculate from interval
+  if (subscription.status === 'active' && subscription.cancel_at_period_end) {
+    // User scheduled cancellation - they still have access until period end
+    internalStatus = 'canceled'
+    console.log('→ Mapping to "canceled" (scheduled cancellation)')
+  } else if (subscription.status === 'active') {
+    // Fully active subscription
+    internalStatus = 'active'
+    console.log('→ Mapping to "active"')
+  } else {
+    // All other statuses (canceled, past_due, unpaid, incomplete, trialing, etc.)
+    internalStatus = subscription.status
+    console.log(`→ Using Stripe status directly: "${internalStatus}"`)
+  }
+  
+  // Get period end timestamp from multiple possible sources (Stripe API changes)
+  // Priority: 1. cancel_at (when scheduled to cancel), 2. items[0].current_period_end, 3. root current_period_end
+  let periodEndTimestamp: number | null = null
+  
+  // If subscription is scheduled to cancel, use cancel_at as the end date
+  if (subscription.cancel_at_period_end && (subscription as any).cancel_at) {
+    periodEndTimestamp = (subscription as any).cancel_at
+    console.log('Using cancel_at for period end:', periodEndTimestamp)
+  }
+  
+  // Try items[0].current_period_end (new Stripe API structure)
+  if (!periodEndTimestamp) {
+    const itemPeriodEnd = subscription.items?.data?.[0]?.current_period_end
+    if (itemPeriodEnd) {
+      periodEndTimestamp = itemPeriodEnd
+      console.log('Using items[0].current_period_end:', periodEndTimestamp)
+    }
+  }
+  
+  // Fallback to root current_period_end
+  if (!periodEndTimestamp && subscription.current_period_end) {
+    periodEndTimestamp = subscription.current_period_end
+    console.log('Using root current_period_end:', periodEndTimestamp)
+  }
+  
+  // Last resort: calculate from interval
   if (!periodEndTimestamp && subscription.current_period_start) {
     const interval = subscription.items?.data?.[0]?.price?.recurring?.interval
     const intervalCount = subscription.items?.data?.[0]?.price?.recurring?.interval_count || 1
@@ -595,23 +682,23 @@ async function updateSubscriptionStatus(userId: string, subscription: Stripe.Sub
       startDate.setFullYear(startDate.getFullYear() + intervalCount)
       periodEndTimestamp = Math.floor(startDate.getTime() / 1000)
     }
-    console.log('Calculated period_end:', periodEndTimestamp)
+    console.log('Calculated period_end from interval:', periodEndTimestamp)
   }
   
   const currentPeriodEnd = safeTimestampToISO(periodEndTimestamp)
   const priceId = subscription.items?.data?.[0]?.price?.id || null
   const planName = 'pro'
   
-  console.log('Values for database update:')
-  console.log('  - subscription_status:', status)
-  console.log('  - subscription_id:', subscription.id)
-  console.log('  - subscription_end_date:', currentPeriodEnd)
-  console.log('  - stripe_price_id:', priceId)
+  console.log('=== Database Update Values ===')
+  console.log('  subscription_status:', internalStatus)
+  console.log('  subscription_id:', subscription.id)
+  console.log('  subscription_end_date:', currentPeriodEnd)
+  console.log('  stripe_price_id:', priceId)
   
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .update({
-      subscription_status: status,
+      subscription_status: internalStatus,
       subscription_id: subscription.id,
       subscription_end_date: currentPeriodEnd,
       subscription_plan: planName,

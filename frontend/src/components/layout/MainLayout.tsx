@@ -15,7 +15,11 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const { user, signOut } = useAuth()
   const location = useLocation()
-  const [profile, setProfile] = useState<{ avatar_url?: string; full_name?: string } | null>(null)
+  const [profile, setProfile] = useState<{ 
+    avatar_url?: string
+    full_name?: string
+    subscription_plan?: string 
+  } | null>(null)
 
   const isSettingsPage = location.pathname === '/settings'
 
@@ -31,7 +35,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('avatar_url, full_name')
+        .select('avatar_url, full_name, subscription_plan')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -70,6 +74,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               userEmail={user?.email}
               avatarUrl={profile?.avatar_url}
               fullName={profile?.full_name}
+              subscriptionPlan={profile?.subscription_plan}
               onSignOut={signOut}
             />
           </div>

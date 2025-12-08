@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [betaAccepted, setBetaAccepted] = useState(false)
   const [showBetaModal, setShowBetaModal] = useState(false)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null)
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<Date | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const { setUser: setStoreUser } = useAuthStore()
   
@@ -42,11 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const subscriptionLoading = user !== null && subscriptionCheckedForUser !== user.id
 
   // Fetch subscription status from profile
-  // Returns effective status considering:
-  // - active/trialing = has access
-  // - canceled = has access UNTIL subscription_end_date
-  // - past_due/inactive/incomplete = no access
-  const fetchSubscriptionStatus = useCallback(async (userId: string) => {
+  // Returns: { status: string, endDate: Date | null }
+  const fetchSubscriptionStatus = useCallback(async (userId: string): Promise<{ status: string; endDate: Date | null }> => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -56,36 +54,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.warn('Failed to fetch subscription status:', error)
-        return 'inactive'
+        return { status: 'inactive', endDate: null }
       }
 
       // User must have a subscription_id
       if (!profile?.subscription_id) {
         console.log('User has no subscription_id - treating as inactive')
-        return 'inactive'
+        return { status: 'inactive', endDate: null }
       }
 
       const status = profile?.subscription_status || 'inactive'
-      
-      // Handle canceled subscriptions - user still has access until end date
-      if (status === 'canceled' && profile?.subscription_end_date) {
-        const endDate = new Date(profile.subscription_end_date)
-        const now = new Date()
-        
-        if (endDate > now) {
-          console.log('Subscription canceled but still within paid period until:', endDate)
-          return 'active' // Treat as active until period ends
-        } else {
-          console.log('Subscription canceled and period has ended')
-          return 'inactive'
-        }
-      }
+      const endDate = profile?.subscription_end_date ? new Date(profile.subscription_end_date) : null
 
-      // Return the actual status
-      return status
+      // Return the actual status and end date (let hasActiveSubscription handle the logic)
+      return { status, endDate }
     } catch (error) {
       console.warn('Error fetching subscription:', error)
-      return 'inactive'
+      return { status: 'inactive', endDate: null }
     }
   }, [])
 
@@ -122,11 +107,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setShowBetaModal(false)
         
         // Check subscription status
-        const status = await fetchSubscriptionStatus(user.id)
+        const { status, endDate } = await fetchSubscriptionStatus(user.id)
         setSubscriptionStatus(status)
+        setSubscriptionEndDate(endDate)
         
         // Show subscription modal if not active
-        const hasActive = status && ACTIVE_SUBSCRIPTION_STATUSES.includes(status)
+        // Active statuses OR canceled but still within paid period
+        const now = new Date()
+        const hasActive = (status && ACTIVE_SUBSCRIPTION_STATUSES.includes(status)) ||
+                          (status === 'canceled' && endDate && endDate > now)
         setShowSubscriptionModal(!hasActive)
         
         // Mark subscription as checked for this user
@@ -135,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setBetaAccepted(false)
         setShowBetaModal(false)
         setSubscriptionStatus(null)
+        setSubscriptionEndDate(null)
         setShowSubscriptionModal(false)
         setSubscriptionCheckedForUser(null)
       }
@@ -174,9 +164,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setShowBetaModal(false)
       
       // After beta acceptance, check subscription
-      const status = await fetchSubscriptionStatus(user.id)
+      const { status, endDate } = await fetchSubscriptionStatus(user.id)
       setSubscriptionStatus(status)
-      const hasActive = status && ACTIVE_SUBSCRIPTION_STATUSES.includes(status)
+      setSubscriptionEndDate(endDate)
+      const now = new Date()
+      const hasActive = (status && ACTIVE_SUBSCRIPTION_STATUSES.includes(status)) ||
+                        (status === 'canceled' && endDate && endDate > now)
       setShowSubscriptionModal(!hasActive)
     }
   }
@@ -186,9 +179,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       // Temporarily mark as not checked to show loading
       setSubscriptionCheckedForUser(null)
-      const status = await fetchSubscriptionStatus(user.id)
+      const { status, endDate } = await fetchSubscriptionStatus(user.id)
       setSubscriptionStatus(status)
-      const hasActive = status && ACTIVE_SUBSCRIPTION_STATUSES.includes(status)
+      setSubscriptionEndDate(endDate)
+      const now = new Date()
+      const hasActive = (status && ACTIVE_SUBSCRIPTION_STATUSES.includes(status)) ||
+                        (status === 'canceled' && endDate && endDate > now)
       setShowSubscriptionModal(!hasActive)
       setSubscriptionCheckedForUser(user.id)
     }
@@ -228,7 +224,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const hasBetaAccess = betaAccepted || !user
-  const hasActiveSubscription = subscriptionStatus !== null && ACTIVE_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)
+  
+  // User has active subscription if:
+  // 1. Status is 'active' or 'trialing', OR
+  // 2. Status is 'canceled' but still within paid period (endDate > now)
+  const hasActiveSubscription = 
+    (subscriptionStatus !== null && ACTIVE_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)) ||
+    (subscriptionStatus === 'canceled' && subscriptionEndDate !== null && subscriptionEndDate > new Date())
 
   return (
     <AuthContext.Provider value={{ 
