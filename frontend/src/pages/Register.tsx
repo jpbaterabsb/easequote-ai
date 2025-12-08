@@ -222,14 +222,18 @@ export function Register() {
             </Button>
           </form>
 
-          {/* Divider */}
+          {/* TODO: Enable Google OAuth sign up after configuring Google Cloud Console credentials
+              - Create OAuth 2.0 Client ID in Google Cloud Console
+              - Add authorized redirect URIs for Supabase
+              - Configure Google provider in Supabase Dashboard > Authentication > Providers
+          */}
+          {/* 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-gray-200" />
             </div>
           </div>
 
-          {/* Google Button */}
           <Button
             type="button"
             variant="outline"
@@ -257,6 +261,7 @@ export function Register() {
             </svg>
             Continue with Google
           </Button>
+          */}
 
           {/* Sign in link */}
           <p className="text-center text-gray-600 mt-6">
