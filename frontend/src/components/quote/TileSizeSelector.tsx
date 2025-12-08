@@ -15,6 +15,7 @@ export function TileSizeSelector({ selectedTileSizeId, onSelect }: TileSizeSelec
     subway: tileSizes.filter((t) => t.category === 'subway'),
     rectangular: tileSizes.filter((t) => t.category === 'rectangular'),
     square: tileSizes.filter((t) => t.category === 'square'),
+    large: tileSizes.filter((t) => t.category === 'large'),
     special: tileSizes.filter((t) => t.category === 'special'),
   }
 
@@ -43,6 +44,11 @@ export function TileSizeSelector({ selectedTileSizeId, onSelect }: TileSizeSelec
                 <div className="font-medium">{tile.name}</div>
                 <div className="text-xs text-muted-foreground mt-1">
                   {tile.clipsPerSqft} clips/sqf
+                  {tile.thinsetPerSqft && (
+                    <span className="block">
+                      {tile.thinsetPerSqft} thinset/sqf
+                    </span>
+                  )}
                 </div>
               </button>
             )
@@ -75,6 +81,10 @@ export function TileSizeSelector({ selectedTileSizeId, onSelect }: TileSizeSelec
         {renderCategorySection(
           t('quoteCreation.tileSquare') || 'Square Formats',
           tilesByCategory.square
+        )}
+        {renderCategorySection(
+          t('quoteCreation.tileLarge') || 'Large Format',
+          tilesByCategory.large
         )}
         {renderCategorySection(
           t('quoteCreation.tileSpecial') || 'Special Shapes',

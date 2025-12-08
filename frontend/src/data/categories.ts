@@ -317,7 +317,7 @@ export const categories: Category[] = [
             name: 'Waterproof',            priceType: 'sqft',
             priceRange: { min: 2, max: 4 },
             defaultPrice: 3,
-          addonType: 'material',
+          addonType: 'service',
             },
           {
             id: 'niche',
@@ -415,7 +415,7 @@ export const categories: Category[] = [
             name: 'Waterproof',            priceType: 'sqft',
             priceRange: { min: 2, max: 4 },
             defaultPrice: 3,
-          addonType: 'material',
+          addonType: 'service',
             },
           {
             id: 'niche',

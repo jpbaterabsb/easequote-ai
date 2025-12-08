@@ -10,7 +10,8 @@ export interface TileSize {
   sqftPerPiece: number
   clipsPerSqft: number
   spacersPerSqft: number
-  category: 'subway' | 'rectangular' | 'square' | 'special'
+  thinsetPerSqft?: number // Thinset usage per sqft (for large format tiles)
+  category: 'subway' | 'rectangular' | 'square' | 'large' | 'special'
 }
 
 export const tileSizes: TileSize[] = [
@@ -33,8 +34,13 @@ export const tileSizes: TileSize[] = [
   { id: '12x12', name: '12x12', size: '12x12', sqftPerPiece: 1.00, clipsPerSqft: 4, spacersPerSqft: 4, category: 'square' },
   { id: '16x16', name: '16x16', size: '16x16', sqftPerPiece: 1.77, clipsPerSqft: 2.8, spacersPerSqft: 2.8, category: 'square' },
   { id: '18x18', name: '18x18', size: '18x18', sqftPerPiece: 2.25, clipsPerSqft: 2, spacersPerSqft: 2, category: 'square' },
-  { id: '24x24', name: '24x24', size: '24x24', sqftPerPiece: 4.00, clipsPerSqft: 1.8, spacersPerSqft: 1.8, category: 'square' },
-  { id: '30x30', name: '30x30', size: '30x30', sqftPerPiece: 6.25, clipsPerSqft: 1.4, spacersPerSqft: 1.4, category: 'square' },
+  
+  // Large Format Tiles (⚠️ Values are approximate - may vary by substrate, manufacturer and installation method)
+  { id: '24x24', name: '24x24', size: '24x24', sqftPerPiece: 4.00, clipsPerSqft: 1.2, spacersPerSqft: 1.2, thinsetPerSqft: 0.40, category: 'large' },
+  { id: '30x30', name: '30x30', size: '30x30', sqftPerPiece: 6.25, clipsPerSqft: 1.4, spacersPerSqft: 1.4, thinsetPerSqft: 0.45, category: 'large' },
+  { id: '24x48', name: '24x48', size: '24x48', sqftPerPiece: 8.00, clipsPerSqft: 1.4, spacersPerSqft: 1.4, thinsetPerSqft: 0.60, category: 'large' },
+  { id: '30x60', name: '30x60', size: '30x60', sqftPerPiece: 12.50, clipsPerSqft: 1.5, spacersPerSqft: 1.5, thinsetPerSqft: 0.65, category: 'large' },
+  { id: '36x36', name: '36x36', size: '36x36', sqftPerPiece: 9.00, clipsPerSqft: 1.5, spacersPerSqft: 1.5, thinsetPerSqft: 0.70, category: 'large' },
   
   // Special Shapes
   { id: 'hexagon_8', name: 'Hexagon 8"', size: 'Hexagon 8"', sqftPerPiece: 0.35, clipsPerSqft: 7, spacersPerSqft: 7, category: 'special' },
