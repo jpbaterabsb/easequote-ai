@@ -78,27 +78,28 @@ export function Register() {
     }
   }
 
-  const handleGoogleSignUp = async () => {
-    setError(null)
-    setLoading(true)
-
-    try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (oauthError) {
-        setError('Failed to sign up with Google. Please try again.')
-        setLoading(false)
-      }
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
-      setLoading(false)
-    }
-  }
+  // TODO: Enable Google OAuth after configuring Google Cloud Console credentials
+  // const handleGoogleSignUp = async () => {
+  //   setError(null)
+  //   setLoading(true)
+  //
+  //   try {
+  //     const { error: oauthError } = await supabase.auth.signInWithOAuth({
+  //       provider: 'google',
+  //       options: {
+  //         redirectTo: `${window.location.origin}/auth/callback`,
+  //       },
+  //     })
+  //
+  //     if (oauthError) {
+  //       setError('Failed to sign up with Google. Please try again.')
+  //       setLoading(false)
+  //     }
+  //   } catch (err) {
+  //     setError('An unexpected error occurred. Please try again.')
+  //     setLoading(false)
+  //   }
+  // }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
