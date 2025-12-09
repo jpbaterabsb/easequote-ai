@@ -49,6 +49,7 @@
     "createQuote": "Create New Quote",
     "noQuotes": "No quotes yet",
     "noQuotesDescription": "Get started by creating your first quote",
+    "noQuotesDescriptionFull": "Create your first quote to get started. You can send professional quotes via email or WhatsApp.",
     "quotes": "Quotes",
     "quote": "quote",
     "sortBy": "Sort by:",

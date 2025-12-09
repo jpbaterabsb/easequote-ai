@@ -49,6 +49,7 @@
     "createQuote": "Crear nueva cotización",
     "noQuotes": "Aún no hay cotizaciones",
     "noQuotesDescription": "Comienza creando tu primera cotización",
+    "noQuotesDescriptionFull": "Crea tu primera cotización para comenzar. Puedes enviar cotizaciones profesionales por correo electrónico o WhatsApp.",
     "quotes": "Cotizaciones",
     "quote": "cotización",
     "sortBy": "Ordenar por:",

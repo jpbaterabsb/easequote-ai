@@ -181,11 +181,18 @@ serve(async (req) => {
         console.log('--- Handling customer.subscription.deleted ---')
         const subscription = event.data.object as Stripe.Subscription
         
+        // Get ended_at to determine if subscription ended immediately or was scheduled
+        const endedAt = (subscription as any).ended_at
+        const canceledAt = (subscription as any).canceled_at
+        
         console.log('Deleted subscription details:', {
           id: subscription.id,
           status: subscription.status,
           customer: subscription.customer,
           metadata: subscription.metadata,
+          ended_at: endedAt,
+          canceled_at: canceledAt,
+          cancel_at_period_end: subscription.cancel_at_period_end,
         })
         
         const userId = subscription.metadata?.supabase_user_id
@@ -215,21 +222,45 @@ serve(async (req) => {
         }
         
         if (userIdToUpdate) {
-          // Note: Keep subscription_id and subscription_end_date so user has access until period ends
-          console.log('Updating profile to canceled status (user keeps access until end_date)...')
-          const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .update({
-              subscription_status: 'canceled',
-              // Don't clear subscription_id - we need it to track the subscription
-              // Don't change subscription_end_date - user has access until this date
-            })
-            .eq('id', userIdToUpdate)
+          // Determine if subscription ended immediately or at period end
+          // If ended_at exists and equals canceled_at, it was canceled immediately
+          const canceledImmediately = endedAt && canceledAt && (endedAt === canceledAt)
           
-          if (updateError) {
-            console.error('ERROR: Failed to update profile:', updateError.message)
+          if (canceledImmediately) {
+            // Subscription was canceled IMMEDIATELY - user loses access now
+            console.log('Subscription canceled IMMEDIATELY - removing access...')
+            const { error: updateError } = await supabaseAdmin
+              .from('profiles')
+              .update({
+                subscription_status: 'inactive',
+                subscription_id: null,
+                subscription_plan: null,
+                stripe_price_id: null,
+                subscription_end_date: null,
+              })
+              .eq('id', userIdToUpdate)
+            
+            if (updateError) {
+              console.error('ERROR: Failed to update profile:', updateError.message)
+            } else {
+              console.log('Profile reset to inactive for user:', userIdToUpdate)
+            }
           } else {
-            console.log('Profile updated to canceled status for user:', userIdToUpdate)
+            // Subscription was scheduled to cancel at period end - keep access until end_date
+            console.log('Subscription ended at period end - keeping end_date for access...')
+            const { error: updateError } = await supabaseAdmin
+              .from('profiles')
+              .update({
+                subscription_status: 'canceled',
+                // Keep subscription_end_date so user has access until that date
+              })
+              .eq('id', userIdToUpdate)
+            
+            if (updateError) {
+              console.error('ERROR: Failed to update profile:', updateError.message)
+            } else {
+              console.log('Profile updated to canceled status for user:', userIdToUpdate)
+            }
           }
         } else {
           console.warn('WARNING: Could not find user to update')

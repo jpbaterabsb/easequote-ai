@@ -146,6 +146,11 @@ serve(async (req) => {
           supabase_user_id: user.id,
         },
       },
+      // Enable promotion/coupon codes field in checkout
+      // Note: Cannot use both 'discounts' and 'allow_promotion_codes' at the same time
+      allow_promotion_codes: true,
+      // Only require payment method if total > $0 (allows free coupons without card)
+      payment_method_collection: 'if_required',
     })
 
     console.log('Checkout session created successfully:', {
