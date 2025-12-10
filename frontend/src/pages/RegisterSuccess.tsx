@@ -28,6 +28,9 @@ export function RegisterSuccess() {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
       })
 
       if (error) {

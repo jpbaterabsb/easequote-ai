@@ -98,10 +98,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Routes that should skip beta/subscription checks (e.g., password recovery flow)
+  const SKIP_CHECK_ROUTES = ['/reset-password', '/auth/callback']
+  
   // Check subscription and beta agreement when user changes
   useEffect(() => {
     const checkUserStatus = async () => {
       if (user) {
+        // Skip checks for certain routes (like password reset)
+        const currentPath = window.location.pathname
+        if (SKIP_CHECK_ROUTES.some(route => currentPath.startsWith(route))) {
+          // Mark as checked but don't show modals
+          setSubscriptionCheckedForUser(user.id)
+          setShowBetaModal(false)
+          setShowSubscriptionModal(false)
+          return
+        }
+        
         // Check beta agreement first
         const stored = localStorage.getItem(BETA_AGREEMENT_KEY)
         let isBetaAccepted = false
