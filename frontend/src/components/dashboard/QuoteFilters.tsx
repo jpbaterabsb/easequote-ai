@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/select'
 import type { QuoteFilters as QuoteFiltersType, QuoteStatus } from '@/types/quote'
 import { X, Filter } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 
 interface QuoteFiltersProps {
@@ -29,6 +29,23 @@ const statusOptions: { value: QuoteStatus; label: string }[] = [
 export function QuoteFilters({ filters, onFiltersChange }: QuoteFiltersProps) {
   const { t } = useTranslation()
   const [showFilters, setShowFilters] = useState(false)
+  const [searchInput, setSearchInput] = useState(filters.search)
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        onFiltersChange({ ...filters, search: searchInput })
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  // Sync searchInput when filters.search changes externally (e.g., clear filters)
+  useEffect(() => {
+    setSearchInput(filters.search)
+  }, [filters.search])
 
   const updateFilter = <K extends keyof QuoteFiltersType>(
     key: K,
@@ -63,8 +80,8 @@ export function QuoteFilters({ filters, onFiltersChange }: QuoteFiltersProps) {
         <div className="flex-1">
           <Input
             placeholder={t('dashboard.searchPlaceholder')}
-            value={filters.search}
-            onChange={(e) => updateFilter('search', e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full"
           />
         </div>
