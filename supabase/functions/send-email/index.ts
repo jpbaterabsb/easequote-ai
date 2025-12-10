@@ -287,7 +287,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'EaseQuote AI <onboarding@resend.dev>', // Update with your verified domain
+            from: 'EaseQuote AI <no-reply@easequoteai.com>', // Update with your verified domain
             to: recipient_email,
             subject: emailSubject,
             html: emailBody,

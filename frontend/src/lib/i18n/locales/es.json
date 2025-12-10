@@ -291,6 +291,7 @@
   },
   "quoteCreation": {
     "name": "Nombre",
+    "address": "Dirección",
     "customerInfo": "Información del cliente",
     "lineItems": "Artículos",
     "materialsNotes": "Materiales y notas",

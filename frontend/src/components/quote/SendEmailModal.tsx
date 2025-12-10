@@ -85,7 +85,7 @@ export function SendEmailModal({
   const [language, setLanguage] = useState<Language>('en')
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [sending, setSending] = useState(false)
-  const [profile, setProfile] = useState<{ full_name?: string; phone?: string } | null>(null)
+  const [profile, setProfile] = useState<{ full_name?: string; phone?: string; business_name?: string } | null>(null)
   const [showMaterialPrices, setShowMaterialPrices] = useState(false) // Padrão: escondido
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export function SendEmailModal({
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, phone')
+        .select('full_name, phone, business_name')
         .eq('id', user.id)
         .single()
 
@@ -119,7 +119,7 @@ export function SendEmailModal({
   }
 
   const updateEmailContent = () => {
-    const businessName = profile?.full_name || user?.email?.split('@')[0] || 'EaseQuote AI'
+    const businessName = profile?.business_name || profile?.full_name || user?.email?.split('@')[0] || 'EaseQuote AI'
     const template = emailTemplates[language]
     setSubject(template.subject(quoteNumber, businessName))
     setBody(template.body(customerName, businessName, profile?.phone))
