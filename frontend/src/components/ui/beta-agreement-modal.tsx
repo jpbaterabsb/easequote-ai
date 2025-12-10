@@ -30,70 +30,70 @@ export function BetaAgreementModal({ open, onAccept }: BetaAgreementModalProps) 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-lg max-h-[90vh] overflow-y-auto"
+        className="sm:max-w-lg"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="space-y-4">
+        <DialogHeader className="space-y-2 sm:space-y-4">
           <div className="flex items-center justify-center">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl opacity-50 animate-pulse" />
-              <Logo linkTo={null} size="lg" className="relative h-16" />
+              <Logo linkTo={null} size="lg" className="relative h-10 sm:h-16" />
             </div>
           </div>
-          <DialogTitle className="text-center text-2xl font-bold text-primary">
+          <DialogTitle className="text-center text-lg sm:text-2xl font-bold text-primary">
             BETA ACCESS AGREEMENT
           </DialogTitle>
-          <DialogDescription className="text-center text-base">
+          <DialogDescription className="text-center text-sm sm:text-base">
             Thank you for participating in the EaseQuote.AI Beta Program.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <p className="text-sm text-muted-foreground leading-relaxed">
+        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             By continuing and using the application, you acknowledge that:
           </p>
           
-          <ul className="space-y-3 text-sm">
-            <li className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+          <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+            <li className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
               <span className="text-primary font-bold mt-0.5">•</span>
               <span>This is a <strong>test version</strong>, not final, and may contain errors or limitations.</span>
             </li>
-            <li className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <li className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
               <span className="text-primary font-bold mt-0.5">•</span>
               <span>Access is provided <strong>100% free</strong> during the beta phase.</span>
             </li>
-            <li className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <li className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
               <span className="text-primary font-bold mt-0.5">•</span>
               <span>Features, pricing, layouts, and results may <strong>change without prior notice</strong>.</span>
             </li>
-            <li className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <li className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
               <span className="text-primary font-bold mt-0.5">•</span>
               <span>You agree to use the system responsibly and understand that results are <strong>estimates, not guaranteed values</strong>.</span>
             </li>
-            <li className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <li className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
               <span className="text-primary font-bold mt-0.5">•</span>
               <span>Your usage data and feedback may be used to <strong>improve the platform</strong>.</span>
             </li>
           </ul>
 
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
-            <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-primary/10 border border-primary/20">
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Your participation helps us build a better product.
             </p>
           </div>
 
-          <div className="flex items-center space-x-3 pt-2">
+          <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 pt-2">
             <Checkbox
               id="beta-terms"
               checked={hasRead}
               onCheckedChange={(checked) => setHasRead(checked as boolean)}
-              className="border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              className="border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-0.5 sm:mt-0"
             />
             <Label
               htmlFor="beta-terms"
-              className="text-sm font-medium leading-none cursor-pointer"
+              className="text-xs sm:text-sm font-medium leading-tight sm:leading-none cursor-pointer"
             >
               I have read and understood the Beta Access terms
             </Label>
@@ -104,13 +104,13 @@ export function BetaAgreementModal({ open, onAccept }: BetaAgreementModalProps) 
           <Button
             onClick={handleAccept}
             disabled={!hasRead}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2.5 sm:py-3 text-sm sm:text-base transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {hasRead ? '✓ AGREE & CONTINUE' : 'Please read and accept the terms'}
           </Button>
         </DialogFooter>
 
-        <p className="text-xs text-center text-muted-foreground">
+        <p className="text-[10px] sm:text-xs text-center text-muted-foreground">
           By pressing AGREE, you confirm that you have read and accepted the Beta Access terms.
         </p>
       </DialogContent>

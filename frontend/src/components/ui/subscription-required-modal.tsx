@@ -95,52 +95,52 @@ export function SubscriptionRequiredModal({ open, onSignOut, userEmail }: Subscr
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-lg max-h-[90vh] overflow-y-auto"
+        className="sm:max-w-lg"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="space-y-4">
+        <DialogHeader className="space-y-2 sm:space-y-4">
           <div className="flex items-center justify-center">
-            <Logo linkTo={null} size="lg" className="h-14" />
+            <Logo linkTo={null} size="lg" className="h-10 sm:h-14" />
           </div>
-          <DialogTitle className="text-center text-xl font-bold text-primary">
+          <DialogTitle className="text-center text-lg sm:text-xl font-bold text-primary">
             Choose Your Plan
           </DialogTitle>
-          <DialogDescription className="text-center text-base">
+          <DialogDescription className="text-center text-sm sm:text-base">
             {userEmail ? (
-              <>Welcome, <strong>{userEmail}</strong>!</>
+              <>Welcome, <strong className="break-all">{userEmail}</strong>!</>
             ) : (
               'Welcome to EaseQuote.AI!'
             )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="text-center text-sm text-muted-foreground">
-            Select a plan to access all features of EaseQuote.AI
+        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+          <div className="text-center text-xs sm:text-sm text-muted-foreground">
+            Select a plan to access all features
           </div>
 
-          {/* Plan Selection */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Plan Selection - stack on very small screens */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {/* Monthly Plan */}
             <button
               onClick={() => setSelectedPlan('monthly')}
               disabled={loading}
               className={cn(
-                "relative rounded-xl border-2 p-4 text-left transition-all hover:border-primary/50",
+                "relative rounded-lg sm:rounded-xl border-2 p-3 sm:p-4 text-left transition-all hover:border-primary/50",
                 selectedPlan === 'monthly' 
                   ? "border-primary bg-primary/5 shadow-md" 
                   : "border-muted bg-background hover:bg-muted/30"
               )}
             >
-              <div className="space-y-1">
-                <p className="font-semibold text-sm">{PLANS.monthly.name}</p>
-                <p className="text-2xl font-bold">{PLANS.monthly.price}</p>
-                <p className="text-xs text-muted-foreground">{PLANS.monthly.period}</p>
+              <div className="space-y-0.5 sm:space-y-1">
+                <p className="font-semibold text-xs sm:text-sm">{PLANS.monthly.name}</p>
+                <p className="text-lg sm:text-2xl font-bold">{PLANS.monthly.price}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{PLANS.monthly.period}</p>
               </div>
               {selectedPlan === 'monthly' && (
-                <div className="absolute top-2 right-2">
-                  <Check className="h-5 w-5 text-primary" />
+                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
               )}
             </button>
@@ -150,70 +150,70 @@ export function SubscriptionRequiredModal({ open, onSignOut, userEmail }: Subscr
               onClick={() => setSelectedPlan('yearly')}
               disabled={loading}
               className={cn(
-                "relative rounded-xl border-2 p-4 text-left transition-all hover:border-primary/50",
+                "relative rounded-lg sm:rounded-xl border-2 p-3 sm:p-4 text-left transition-all hover:border-primary/50",
                 selectedPlan === 'yearly' 
                   ? "border-primary bg-primary/5 shadow-md" 
                   : "border-muted bg-background hover:bg-muted/30"
               )}
             >
               {PLANS.yearly.savings && (
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-500 px-2.5 py-0.5 text-[10px] font-semibold text-white">
-                    <Sparkles className="h-3 w-3" />
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full bg-green-500 px-1.5 sm:px-2.5 py-0.5 text-[8px] sm:text-[10px] font-semibold text-white whitespace-nowrap">
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                     {PLANS.yearly.savings}
                   </span>
                 </div>
               )}
-              <div className="space-y-1">
-                <p className="font-semibold text-sm">{PLANS.yearly.name}</p>
-                <p className="text-2xl font-bold">{PLANS.yearly.price}</p>
-                <p className="text-xs text-muted-foreground">{PLANS.yearly.period}</p>
+              <div className="space-y-0.5 sm:space-y-1">
+                <p className="font-semibold text-xs sm:text-sm">{PLANS.yearly.name}</p>
+                <p className="text-lg sm:text-2xl font-bold">{PLANS.yearly.price}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{PLANS.yearly.period}</p>
                 {PLANS.yearly.monthlyEquivalent && (
-                  <p className="text-xs text-green-600 font-medium">
+                  <p className="text-[10px] sm:text-xs text-green-600 font-medium">
                     ({PLANS.yearly.monthlyEquivalent})
                   </p>
                 )}
               </div>
               {selectedPlan === 'yearly' && (
-                <div className="absolute top-2 right-2">
-                  <Check className="h-5 w-5 text-primary" />
+                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
               )}
             </button>
           </div>
 
-          {/* Features */}
-          <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-2">
-            <h4 className="font-semibold text-sm text-center mb-3">All plans include:</h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          {/* Features - single column on mobile */}
+          <div className="rounded-lg border border-muted bg-muted/30 p-3 sm:p-4 space-y-2">
+            <h4 className="font-semibold text-xs sm:text-sm text-center mb-2 sm:mb-3">All plans include:</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-x-4 sm:gap-y-2 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                 <span>Unlimited quotes</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                 <span>PDF generation</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                 <span>Email sending</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                 <span>WhatsApp integration</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                 <span>Customer management</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                 <span>Materials calculator</span>
               </div>
             </div>
           </div>
 
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-[10px] sm:text-xs text-center text-muted-foreground">
             Secure payment powered by Stripe. Cancel anytime.
           </p>
         </div>
