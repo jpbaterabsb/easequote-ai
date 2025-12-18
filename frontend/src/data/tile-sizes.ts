@@ -10,45 +10,46 @@ export interface TileSize {
   sqftPerPiece: number
   clipsPerSqft: number
   spacersPerSqft: number
-  thinsetPerSqft?: number // Thinset usage per sqft (for large format tiles)
+  thinsetPerSqft: number // Thinset usage per sqft
+  groutPerSqft: number // Grout usage per sqft
   category: 'subway' | 'rectangular' | 'square' | 'large' | 'special'
 }
 
 export const tileSizes: TileSize[] = [
   // Subway / Small Formats
-  { id: '3x6', name: '3x6', size: '3x6', sqftPerPiece: 0.125, clipsPerSqft: 10, spacersPerSqft: 10, category: 'subway' },
-  { id: '3x12', name: '3x12', size: '3x12', sqftPerPiece: 0.25, clipsPerSqft: 6, spacersPerSqft: 6, category: 'subway' },
-  { id: '4x12', name: '4x12', size: '4x12', sqftPerPiece: 0.33, clipsPerSqft: 5, spacersPerSqft: 5, category: 'subway' },
+  { id: '3x6', name: '3x6', size: '3x6', sqftPerPiece: 0.125, clipsPerSqft: 10, spacersPerSqft: 10, thinsetPerSqft: 0.30, groutPerSqft: 0.07, category: 'subway' },
+  { id: '3x12', name: '3x12', size: '3x12', sqftPerPiece: 0.25, clipsPerSqft: 6, spacersPerSqft: 6, thinsetPerSqft: 0.32, groutPerSqft: 0.06, category: 'subway' },
+  { id: '4x12', name: '4x12', size: '4x12', sqftPerPiece: 0.33, clipsPerSqft: 5, spacersPerSqft: 5, thinsetPerSqft: 0.35, groutPerSqft: 0.06, category: 'subway' },
   
-  // Rectangular (Common Wood-Look)
-  { id: '6x24', name: '6x24', size: '6x24', sqftPerPiece: 1.00, clipsPerSqft: 3, spacersPerSqft: 3, category: 'rectangular' },
-  { id: '6x36', name: '6x36', size: '6x36', sqftPerPiece: 1.50, clipsPerSqft: 3, spacersPerSqft: 3, category: 'rectangular' },
-  { id: '6x48', name: '6x48', size: '6x48', sqftPerPiece: 2.00, clipsPerSqft: 2.4, spacersPerSqft: 2.4, category: 'rectangular' },
-  { id: '8x36', name: '8x36', size: '8x36', sqftPerPiece: 2.00, clipsPerSqft: 2.2, spacersPerSqft: 2.2, category: 'rectangular' },
-  { id: '8x48', name: '8x48', size: '8x48', sqftPerPiece: 2.66, clipsPerSqft: 3.4, spacersPerSqft: 3.4, category: 'rectangular' },
-  { id: '12x24', name: '12x24', size: '12x24', sqftPerPiece: 2.00, clipsPerSqft: 2.5, spacersPerSqft: 2.5, category: 'rectangular' },
-  { id: '12x36', name: '12x36', size: '12x36', sqftPerPiece: 3.00, clipsPerSqft: 2, spacersPerSqft: 2, category: 'rectangular' },
-  { id: '12x48', name: '12x48', size: '12x48', sqftPerPiece: 4.00, clipsPerSqft: 1.8, spacersPerSqft: 1.8, category: 'rectangular' },
+  // Rectangular (Common Wood-Look & Medium Formats)
+  { id: '6x24', name: '6x24', size: '6x24', sqftPerPiece: 1.00, clipsPerSqft: 3, spacersPerSqft: 3, thinsetPerSqft: 0.38, groutPerSqft: 0.05, category: 'rectangular' },
+  { id: '6x36', name: '6x36', size: '6x36', sqftPerPiece: 1.50, clipsPerSqft: 3, spacersPerSqft: 3, thinsetPerSqft: 0.40, groutPerSqft: 0.05, category: 'rectangular' },
+  { id: '6x48', name: '6x48', size: '6x48', sqftPerPiece: 2.00, clipsPerSqft: 2.4, spacersPerSqft: 2.4, thinsetPerSqft: 0.45, groutPerSqft: 0.05, category: 'rectangular' },
+  { id: '8x36', name: '8x36', size: '8x36', sqftPerPiece: 2.00, clipsPerSqft: 2.2, spacersPerSqft: 2.2, thinsetPerSqft: 0.45, groutPerSqft: 0.05, category: 'rectangular' },
+  { id: '8x48', name: '8x48', size: '8x48', sqftPerPiece: 2.66, clipsPerSqft: 3.4, spacersPerSqft: 3.4, thinsetPerSqft: 0.48, groutPerSqft: 0.05, category: 'rectangular' },
+  { id: '12x24', name: '12x24', size: '12x24', sqftPerPiece: 2.00, clipsPerSqft: 2.5, spacersPerSqft: 2.5, thinsetPerSqft: 0.50, groutPerSqft: 0.04, category: 'rectangular' },
+  { id: '12x36', name: '12x36', size: '12x36', sqftPerPiece: 3.00, clipsPerSqft: 2, spacersPerSqft: 2, thinsetPerSqft: 0.55, groutPerSqft: 0.04, category: 'rectangular' },
+  { id: '12x48', name: '12x48', size: '12x48', sqftPerPiece: 4.00, clipsPerSqft: 1.8, spacersPerSqft: 1.8, thinsetPerSqft: 0.60, groutPerSqft: 0.04, category: 'rectangular' },
   
   // Square Formats
-  { id: '12x12', name: '12x12', size: '12x12', sqftPerPiece: 1.00, clipsPerSqft: 4, spacersPerSqft: 4, category: 'square' },
-  { id: '16x16', name: '16x16', size: '16x16', sqftPerPiece: 1.77, clipsPerSqft: 2.8, spacersPerSqft: 2.8, category: 'square' },
-  { id: '18x18', name: '18x18', size: '18x18', sqftPerPiece: 2.25, clipsPerSqft: 2, spacersPerSqft: 2, category: 'square' },
+  { id: '12x12', name: '12x12', size: '12x12', sqftPerPiece: 1.00, clipsPerSqft: 4, spacersPerSqft: 4, thinsetPerSqft: 0.35, groutPerSqft: 0.06, category: 'square' },
+  { id: '16x16', name: '16x16', size: '16x16', sqftPerPiece: 1.77, clipsPerSqft: 2.8, spacersPerSqft: 2.8, thinsetPerSqft: 0.40, groutPerSqft: 0.05, category: 'square' },
+  { id: '18x18', name: '18x18', size: '18x18', sqftPerPiece: 2.25, clipsPerSqft: 2, spacersPerSqft: 2, thinsetPerSqft: 0.42, groutPerSqft: 0.05, category: 'square' },
   
   // Large Format Tiles (⚠️ Values are approximate - may vary by substrate, manufacturer and installation method)
-  { id: '24x24', name: '24x24', size: '24x24', sqftPerPiece: 4.00, clipsPerSqft: 1.2, spacersPerSqft: 1.2, thinsetPerSqft: 0.40, category: 'large' },
-  { id: '30x30', name: '30x30', size: '30x30', sqftPerPiece: 6.25, clipsPerSqft: 1.4, spacersPerSqft: 1.4, thinsetPerSqft: 0.45, category: 'large' },
-  { id: '24x48', name: '24x48', size: '24x48', sqftPerPiece: 8.00, clipsPerSqft: 1.4, spacersPerSqft: 1.4, thinsetPerSqft: 0.60, category: 'large' },
-  { id: '30x60', name: '30x60', size: '30x60', sqftPerPiece: 12.50, clipsPerSqft: 1.5, spacersPerSqft: 1.5, thinsetPerSqft: 0.65, category: 'large' },
-  { id: '36x36', name: '36x36', size: '36x36', sqftPerPiece: 9.00, clipsPerSqft: 1.5, spacersPerSqft: 1.5, thinsetPerSqft: 0.70, category: 'large' },
+  { id: '24x24', name: '24x24', size: '24x24', sqftPerPiece: 4.00, clipsPerSqft: 1.2, spacersPerSqft: 1.2, thinsetPerSqft: 0.40, groutPerSqft: 0.04, category: 'large' },
+  { id: '30x30', name: '30x30', size: '30x30', sqftPerPiece: 6.25, clipsPerSqft: 1.4, spacersPerSqft: 1.4, thinsetPerSqft: 0.45, groutPerSqft: 0.04, category: 'large' },
+  { id: '24x48', name: '24x48', size: '24x48', sqftPerPiece: 8.00, clipsPerSqft: 1.4, spacersPerSqft: 1.4, thinsetPerSqft: 0.60, groutPerSqft: 0.04, category: 'large' },
+  { id: '30x60', name: '30x60', size: '30x60', sqftPerPiece: 12.50, clipsPerSqft: 1.5, spacersPerSqft: 1.5, thinsetPerSqft: 0.65, groutPerSqft: 0.04, category: 'large' },
+  { id: '36x36', name: '36x36', size: '36x36', sqftPerPiece: 9.00, clipsPerSqft: 1.5, spacersPerSqft: 1.5, thinsetPerSqft: 0.70, groutPerSqft: 0.03, category: 'large' },
   
   // Special Shapes
-  { id: 'hexagon_8', name: 'Hexagon 8"', size: 'Hexagon 8"', sqftPerPiece: 0.35, clipsPerSqft: 7, spacersPerSqft: 7, category: 'special' },
-  { id: 'hexagon_12', name: 'Hexagon 12"', size: 'Hexagon 12"', sqftPerPiece: 0.75, clipsPerSqft: 5, spacersPerSqft: 5, category: 'special' },
-  { id: 'penny_tile', name: 'Penny Tile (sheet)', size: 'Penny Tile (sheet)', sqftPerPiece: 1.00, clipsPerSqft: 0, spacersPerSqft: 0, category: 'special' },
-  { id: 'mosaic_sheet', name: 'Mosaic Sheet 12x12', size: 'Mosaic Sheet 12x12', sqftPerPiece: 1.00, clipsPerSqft: 0.5, spacersPerSqft: 0.5, category: 'special' },
-  { id: 'arabesco', name: 'Arabesco', size: 'Arabesco', sqftPerPiece: 0.30, clipsPerSqft: 7, spacersPerSqft: 7, category: 'special' },
-  { id: 'fish_scale', name: 'Fish Scale', size: 'Fish Scale', sqftPerPiece: 0.25, clipsPerSqft: 9, spacersPerSqft: 9, category: 'special' },
+  { id: 'hexagon_8', name: 'Hexagon 8"', size: 'Hexagon 8"', sqftPerPiece: 0.35, clipsPerSqft: 7, spacersPerSqft: 7, thinsetPerSqft: 0.38, groutPerSqft: 0.07, category: 'special' },
+  { id: 'hexagon_12', name: 'Hexagon 12"', size: 'Hexagon 12"', sqftPerPiece: 0.75, clipsPerSqft: 5, spacersPerSqft: 5, thinsetPerSqft: 0.40, groutPerSqft: 0.06, category: 'special' },
+  { id: 'penny_tile', name: 'Penny Tile (sheet)', size: 'Penny Tile (sheet)', sqftPerPiece: 1.00, clipsPerSqft: 0, spacersPerSqft: 0, thinsetPerSqft: 0.30, groutPerSqft: 0.07, category: 'special' },
+  { id: 'mosaic_sheet', name: 'Mosaic Sheet 12x12', size: 'Mosaic Sheet 12x12', sqftPerPiece: 1.00, clipsPerSqft: 0.5, spacersPerSqft: 0.5, thinsetPerSqft: 0.35, groutPerSqft: 0.06, category: 'special' },
+  { id: 'arabesco', name: 'Arabesco', size: 'Arabesco', sqftPerPiece: 0.30, clipsPerSqft: 7, spacersPerSqft: 7, thinsetPerSqft: 0.40, groutPerSqft: 0.07, category: 'special' },
+  { id: 'fish_scale', name: 'Fish Scale', size: 'Fish Scale', sqftPerPiece: 0.25, clipsPerSqft: 9, spacersPerSqft: 9, thinsetPerSqft: 0.38, groutPerSqft: 0.07, category: 'special' },
 ]
 
 /**
