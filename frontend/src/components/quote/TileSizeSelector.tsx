@@ -43,7 +43,12 @@ export function TileSizeSelector({ selectedTileSizeId, onSelect }: TileSizeSelec
               >
                 <div className="font-medium">{tile.name}</div>
                 <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                  <span className="block">{tile.clipsPerSqft} clips/sqf</span>
+                  {tile.clipsPerSqft > 0 && (
+                    <span className="block">{tile.clipsPerSqft} clips/sqf</span>
+                  )}
+                  {tile.spacersPerSqft > 0 && (
+                    <span className="block">{tile.spacersPerSqft} spacers/sqf</span>
+                  )}
                   <span className="block">{tile.thinsetPerSqft} thinset/sqf</span>
                   <span className="block">{tile.groutPerSqft} grout/sqf</span>
                 </div>
