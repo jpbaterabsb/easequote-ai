@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { X } from 'lucide-react'
 import { formatCurrency } from '@/utils/format'
 import type { Addon } from '@/types/quote-creation'
 import type { SuggestedAddon, Subcategory } from '@/data/categories'
@@ -478,6 +479,10 @@ export function SubcategoryAddonsPopup({
     }
   }
 
+  const handleRemoveCalculatedMaterial = (materialId: string) => {
+    setCalculatedMaterials((prev) => prev.filter((m) => m.id !== materialId))
+  }
+
   const handleApply = () => {
     // Converter addons selecionados para formato Addon
     const addons: Addon[] = Array.from(selectedAddons.values()).map((addon) => ({
@@ -869,6 +874,14 @@ export function SubcategoryAddonsPopup({
                           </div>
                         )}
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCalculatedMaterial(material.id)}
+                        className="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
+                        title={t('common.remove') || 'Remove'}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 ))}
