@@ -400,6 +400,7 @@ export const categories: Category[] = [
       {
         id: 'shower_full',
         name: 'Shower – Full',
+        requiresTileSize: true,
         basePrice: 50,
         basePriceName: 'Full shower install',
         suggestedAddons: [
