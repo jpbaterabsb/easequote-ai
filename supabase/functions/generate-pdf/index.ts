@@ -11,6 +11,7 @@ const corsHeaders = {
 interface PDFRequest {
   quote_id: string
   language: 'en' | 'es' | 'pt'
+  show_material_prices?: boolean
 }
 
 // Translation labels
@@ -186,11 +187,12 @@ serve(async (req) => {
       auth_time_ms: authTime,
     })
 
-    const { quote_id, language }: PDFRequest = await req.json()
+    const { quote_id, language, show_material_prices = false }: PDFRequest = await req.json()
     
     console.log(`[${requestId}] generate-pdf: Processing request`, {
       quote_id,
       language,
+      show_material_prices,
       user_id: user.id,
     })
 
@@ -748,8 +750,8 @@ serve(async (req) => {
       yPos = (doc as any).lastAutoTable.finalY + 10
     }
 
-    // ========== MATERIALS TABLE ==========
-    if (allMaterials.length > 0) {
+    // ========== MATERIALS TABLE (only if show_material_prices is true) ==========
+    if (show_material_prices && allMaterials.length > 0) {
       doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
@@ -805,13 +807,17 @@ serve(async (req) => {
     })
     summaryY += 8
 
-    if (!quote.customer_provides_materials && quote.material_cost > 0) {
+    // Only show material cost if show_material_prices is true
+    if (show_material_prices && !quote.customer_provides_materials && quote.material_cost > 0) {
       doc.text(`${t.materialCost}:`, summaryBoxX + 5, summaryY)
       doc.text(`$${quote.material_cost.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 5, summaryY, {
         align: 'right',
       })
       summaryY += 8
     }
+
+    // Calculate total: if material prices are hidden, show subtotal as total
+    const displayTotal = show_material_prices ? quote.total_amount : quote.subtotal
 
     // Total with emphasis
     doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2])
@@ -822,7 +828,7 @@ serve(async (req) => {
     doc.setFontSize(14)
     doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2])
     doc.text(`${t.total}:`, summaryBoxX + 5, summaryY + 5)
-    doc.text(`$${quote.total_amount.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 5, summaryY + 5, {
+    doc.text(`$${displayTotal.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 5, summaryY + 5, {
       align: 'right',
     })
 
