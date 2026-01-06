@@ -10,12 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { X } from 'lucide-react'
+import { X, ArrowLeft, Grid3X3 } from 'lucide-react'
 import { formatCurrency } from '@/utils/format'
 import type { Addon } from '@/types/quote-creation'
 import type { SuggestedAddon, Subcategory } from '@/data/categories'
 import { useTranslation } from '@/hooks/useTranslation'
 import { TileSizeSelector } from './TileSizeSelector'
+import { PackageOverviewScreen } from './PackageOverviewScreen'
 import {
   findTileSizeById,
   calculateClipsNeeded,
@@ -24,6 +25,8 @@ import {
   calculateFlooringBoxesNeeded,
   materialCoverage,
 } from '@/data/tile-sizes'
+
+type ScreenState = 'overview' | 'tile-selector' | 'main'
 
 interface SubcategoryAddonsPopupProps {
   open: boolean
@@ -45,29 +48,51 @@ export function SubcategoryAddonsPopup({
   onBasePriceSuggestion,
 }: SubcategoryAddonsPopupProps) {
   const { t } = useTranslation()
+  const [currentScreen, setCurrentScreen] = useState<ScreenState>('overview')
   const [selectedAddons, setSelectedAddons] = useState<Map<string, SuggestedAddon & { price: number; quantity?: number; customBasePrice?: number; editMode?: 'base' | 'total' }>>(new Map())
   const [inputValues, setInputValues] = useState<Map<string, string>>(new Map())
   const [selectedTileSizeId, setSelectedTileSizeId] = useState<string | null>(null)
-  const [calculatedMaterials, setCalculatedMaterials] = useState<Addon[]>([])
+  const [includedMaterials, setIncludedMaterials] = useState<Addon[]>([])
+  const [tileAddon, setTileAddon] = useState<Addon | null>(null)
 
   // Helper function: sempre usa o valor máximo do range quando disponível para cálculos
   const getMaxPrice = (addon: SuggestedAddon): number => {
     return addon.priceRange.max ?? addon.defaultPrice ?? addon.priceRange.min
   }
 
+  // Initialize state when popup opens
   useEffect(() => {
     if (subcategory && open) {
-      // Reset selected addons when subcategory changes
+      // Reset all state
       setSelectedAddons(new Map())
       setInputValues(new Map())
       setSelectedTileSizeId(null)
-      setCalculatedMaterials([])
+      setTileAddon(null)
       
-      // Aplicar basePrice da subcategoria ao price_per_sqft
+      // Determine starting screen based on subcategory type
+      if (subcategory.requiresTileSize && subcategory.includedItems && subcategory.includedItems.length > 0) {
+        setCurrentScreen('overview')
+        // Initialize included materials from subcategory
+        const materials = subcategory.includedItems
+          .filter((item) => item.type === 'material')
+          .map((item) => ({
+            id: `included_${item.id}_${crypto.randomUUID()}`,
+            name: item.name,
+            price: 0, // Included items don't have a separate price
+            addonType: 'material' as const,
+            quantity: undefined, // Will be shown as "Included"
+          }))
+        setIncludedMaterials(materials)
+      } else {
+        setCurrentScreen('main')
+        setIncludedMaterials([])
+      }
+      
+      // Apply basePrice from subcategory to price_per_sqft
       if (subcategory.basePrice !== undefined && onBasePriceSuggestion) {
         onBasePriceSuggestion(subcategory.basePrice)
       } else {
-        // Fallback: procurar base_price nos addons (para compatibilidade)
+        // Fallback: look for base_price in addons
         const basePriceAddon = subcategory.suggestedAddons.find(addon => addon.id === 'base_price' || addon.id === 'installation' || addon.id === 'install')
         if (basePriceAddon && onBasePriceSuggestion) {
           const basePriceValue = getMaxPrice(basePriceAddon)
@@ -78,115 +103,43 @@ export function SubcategoryAddonsPopup({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subcategory, open])
 
-  // Calculate materials for all subcategories based on category and subcategory type
+  // Handle tile size selection - only calculate tile pieces
   useEffect(() => {
-    if (!subcategory || area <= 0) {
+    if (!selectedTileSizeId || !subcategory || area <= 0) {
+      setTileAddon(null)
+      return
+    }
+
+    const tileSize = findTileSizeById(selectedTileSizeId)
+    if (!tileSize) {
+      setTileAddon(null)
+      return
+    }
+
+    const tilesNeeded = calculateTilePiecesNeeded(selectedTileSizeId, area)
+    if (tilesNeeded > 0) {
+      setTileAddon({
+        id: `tiles_${tileSize.id}_${crypto.randomUUID()}`,
+        name: `${tileSize.name} Tiles (${tilesNeeded} ${tilesNeeded === 1 ? 'piece' : 'pieces'})`,
+        price: 0,
+        addonType: 'material',
+        quantity: tilesNeeded,
+        unit: 'piece',
+        priceType: 'unit',
+      })
+    }
+  }, [selectedTileSizeId, subcategory, area])
+
+  // Calculate materials for non-requiresTileSize subcategories only
+  const [calculatedMaterials, setCalculatedMaterials] = useState<Addon[]>([])
+  
+  useEffect(() => {
+    if (!subcategory || area <= 0 || subcategory.requiresTileSize) {
       setCalculatedMaterials([])
       return
     }
 
     const materials: Addon[] = []
-    // For tile-based subcategories (require tile size selection)
-    if (subcategory.requiresTileSize) {
-      if (!selectedTileSizeId) {
-        setCalculatedMaterials([])
-        return
-      }
-
-      const tileSize = findTileSizeById(selectedTileSizeId)
-      if (!tileSize) {
-        setCalculatedMaterials([])
-        return
-      }
-
-      const tilesNeeded = calculateTilePiecesNeeded(selectedTileSizeId, area)
-      if (tilesNeeded > 0) {
-        materials.push({
-          id: `tiles_${tileSize.id}_${crypto.randomUUID()}`,
-          name: `${tileSize.name} Tiles (${tilesNeeded} ${tilesNeeded === 1 ? 'piece' : 'pieces'})`,
-          price: 0,
-          addonType: 'material',
-          quantity: tilesNeeded,
-          unit: 'piece',
-          priceType: 'unit',
-        })
-      }
-
-      // Calculate Thinset
-      const thinsetAddon = subcategory.suggestedAddons.find(a => a.id === 'thinset')
-      if (thinsetAddon) {
-        const bags = materialCoverage.thinset.formula(area)
-        materials.push({
-          id: `thinset_${crypto.randomUUID()}`,
-          name: `Thinset (${bags} ${bags === 1 ? 'bag' : 'bags'})`,
-          price: 0, // Materials don't have price, only quantity
-          addonType: 'material',
-          quantity: bags,
-          unit: 'bag',
-          priceType: 'unit',
-        })
-      }
-
-      // Calculate Grout
-      const groutAddon = subcategory.suggestedAddons.find(a => a.id === 'grout')
-      if (groutAddon) {
-        const bags = materialCoverage.grout.formula(area)
-        materials.push({
-          id: `grout_${crypto.randomUUID()}`,
-          name: `Grout (${bags} ${bags === 1 ? 'bag' : 'bags'})`,
-          price: 0, // Materials don't have price, only quantity
-          addonType: 'material',
-          quantity: bags,
-          unit: 'bag',
-          priceType: 'unit',
-        })
-      }
-
-      // Calculate Leveling Clips
-      const clipsAddon = subcategory.suggestedAddons.find(a => a.id === 'leveling_clips')
-      if (clipsAddon) {
-        const clipsNeeded = calculateClipsNeeded(selectedTileSizeId, area)
-        materials.push({
-          id: `leveling_clips_${crypto.randomUUID()}`,
-          name: `Leveling Clips (${clipsNeeded} clips)`,
-          price: 0, // Materials don't have price, only quantity
-          addonType: 'material',
-          quantity: clipsNeeded,
-          unit: 'clips',
-          priceType: 'unit',
-        })
-      }
-
-      // Calculate Spacers
-      const spacersAddon = subcategory.suggestedAddons.find(a => a.id === 'spacers')
-      if (spacersAddon) {
-        const spacersNeeded = calculateSpacersNeeded(selectedTileSizeId, area)
-        materials.push({
-          id: `spacers_${crypto.randomUUID()}`,
-          name: `Spacers (${spacersNeeded} spacers)`,
-          price: 0, // Materials don't have price, only quantity
-          addonType: 'material',
-          quantity: spacersNeeded,
-          unit: 'spacers',
-          priceType: 'unit',
-        })
-      }
-
-      // Calculate Silicone for backsplash (estimate perimeter as 2x sqrt of area for typical backsplash)
-      if (subcategory.id === 'backsplash') {
-        const perimeter = Math.ceil(2 * Math.sqrt(area) * 2) // Rough estimate: 2x width + 2x height
-        const tubes = materialCoverage.silicone.formula(perimeter)
-        materials.push({
-          id: `silicone_${crypto.randomUUID()}`,
-          name: `Silicone (${tubes} ${tubes === 1 ? 'tube' : 'tubes'})`,
-          price: 0, // Materials don't have price, only quantity
-          addonType: 'material',
-          quantity: tubes,
-          unit: 'tube',
-          priceType: 'unit',
-        })
-      }
-    }
 
     // Calculate materials for flooring subcategories (Vinyl Plank, Laminate)
     if (subcategory.id === 'vinyl_plank' || subcategory.id === 'laminate' || subcategory.id === 'vinyl_glue_down') {
@@ -211,7 +164,7 @@ export function SubcategoryAddonsPopup({
         materials.push({
           id: `underlayment_${crypto.randomUUID()}`,
           name: `Underlayment (${sqftNeeded} sqft)`,
-          price: 0, // Materials don't have price, only quantity
+          price: 0,
           addonType: 'material',
           quantity: sqftNeeded,
           unit: 'sqft',
@@ -219,7 +172,7 @@ export function SubcategoryAddonsPopup({
         })
       }
 
-      // Estimate perimeter for quarter round (assume square room: 4 * sqrt(area))
+      // Estimate perimeter for quarter round
       const perimeter = Math.ceil(4 * Math.sqrt(area))
       const quarterRoundAddon = subcategory.suggestedAddons.find(a => a.id === 'quarter_round')
       if (quarterRoundAddon) {
@@ -227,7 +180,7 @@ export function SubcategoryAddonsPopup({
         materials.push({
           id: `quarter_round_${crypto.randomUUID()}`,
           name: `Quarter Round (${linearFt} ft)`,
-          price: 0, // Materials don't have price, only quantity
+          price: 0,
           addonType: 'material',
           quantity: linearFt,
           unit: 'ft',
@@ -238,24 +191,22 @@ export function SubcategoryAddonsPopup({
 
     // Calculate materials for painting subcategories
     if (subcategory.id === 'interior_walls' || subcategory.id === 'ceilings') {
-      // Paint
       const gallons = materialCoverage.paint.formula(area)
       materials.push({
         id: `paint_${crypto.randomUUID()}`,
         name: `Paint (${gallons} ${gallons === 1 ? 'gallon' : 'gallons'})`,
-        price: 0, // Materials don't have price, only quantity
+        price: 0,
         addonType: 'material',
         quantity: gallons,
         unit: 'gallon',
         priceType: 'unit',
       })
 
-      // Primer (typically needed for new or repaired walls)
       const primerGallons = materialCoverage.primer.formula(area)
       materials.push({
         id: `primer_${crypto.randomUUID()}`,
         name: `Primer (${primerGallons} ${primerGallons === 1 ? 'gallon' : 'gallons'})`,
-        price: 0, // Materials don't have price, only quantity
+        price: 0,
         addonType: 'material',
         quantity: primerGallons,
         unit: 'gallon',
@@ -265,26 +216,24 @@ export function SubcategoryAddonsPopup({
 
     // Calculate materials for drywall subcategories
     if (subcategory.id === 'installation' || subcategory.id === 'patches') {
-      // Drywall mud
       const bags = materialCoverage.drywallMud.formula(area)
       materials.push({
         id: `drywall_mud_${crypto.randomUUID()}`,
         name: `Drywall Mud (${bags} ${bags === 1 ? 'bag' : 'bags'})`,
-        price: 0, // Materials don't have price, only quantity
+        price: 0,
         addonType: 'material',
         quantity: bags,
         unit: 'bag',
         priceType: 'unit',
       })
 
-      // Drywall tape (estimate perimeter)
       const perimeter = Math.ceil(4 * Math.sqrt(area))
       const rolls = materialCoverage.drywallTape.formula(perimeter)
       if (rolls > 0) {
         materials.push({
           id: `drywall_tape_${crypto.randomUUID()}`,
           name: `Drywall Tape (${rolls} ${rolls === 1 ? 'roll' : 'rolls'})`,
-          price: 0, // Materials don't have price, only quantity
+          price: 0,
           addonType: 'material',
           quantity: rolls,
           unit: 'roll',
@@ -301,7 +250,7 @@ export function SubcategoryAddonsPopup({
         materials.push({
           id: `concrete_sealer_${crypto.randomUUID()}`,
           name: `Concrete Sealer (${gallons} ${gallons === 1 ? 'gallon' : 'gallons'})`,
-          price: 0, // Materials don't have price, only quantity
+          price: 0,
           addonType: 'material',
           quantity: gallons,
           unit: 'gallon',
@@ -310,76 +259,45 @@ export function SubcategoryAddonsPopup({
       }
     }
 
-    // Calculate materials for bathroom subcategories
+    // Calculate materials for bathroom subcategories (non-tile)
     if (subcategory.id === 'toilet') {
       const waxRingAddon = subcategory.suggestedAddons.find(a => a.id === 'install' || a.id === 'replace')
       if (waxRingAddon) {
-        const rings = 1 // Typically 1 per toilet
         materials.push({
           id: `wax_ring_${crypto.randomUUID()}`,
-          name: `Wax Ring (${rings} ring)`,
-          price: 0, // Materials don't have price, only quantity
+          name: `Wax Ring (1 ring)`,
+          price: 0,
           addonType: 'material',
-          quantity: rings,
+          quantity: 1,
           unit: 'ring',
           priceType: 'unit',
         })
       }
     }
 
-    // Calculate waterproofing for shower/bathroom subcategories
-    if (subcategory.id === 'shower_full' || subcategory.id === 'shower_walls_only' || 
-        subcategory.id === 'shower_floor_only' || subcategory.id === 'tub_surround') {
-      const waterproofAddon = subcategory.suggestedAddons.find(a => a.id === 'waterproof' || a.id === 'waterproof_floor')
-      if (waterproofAddon) {
-        const units = materialCoverage.waterproof.formula(area)
-        materials.push({
-          id: `waterproof_${crypto.randomUUID()}`,
-          name: `Waterproof Membrane (${units} ${units === 1 ? 'unit' : 'units'})`,
-          price: 0, // Materials don't have price, only quantity
-          addonType: 'material',
-          quantity: units,
-          unit: 'unit',
-          priceType: 'unit',
-        })
-      }
-    }
-
     setCalculatedMaterials(materials)
-  }, [subcategory, selectedTileSizeId, area])
+  }, [subcategory, area])
 
-  // Update prices when area or pricePerSqft changes - recalcula sqft e percent
-  // Percent calcula baseado em: area * pricePerSqft * (percentValue / 100)
-  // Só recalcula se não estiver em modo de edição manual do total
+  // Update prices when area or pricePerSqft changes
   useEffect(() => {
     if (selectedAddons.size > 0 && area > 0) {
       const updatedAddons = new Map(selectedAddons)
       let hasChanges = false
       
       updatedAddons.forEach((addon, id) => {
-        // Se está editando o total manualmente, não recalcula automaticamente
         if (addon.editMode === 'total') {
           return
         }
         
-        // Usa customBasePrice se existir, senão usa o valor máximo do range
         const baseValue = addon.customBasePrice !== undefined ? addon.customBasePrice : getMaxPrice(addon)
         
-        // Sempre recalcula sqft quando área muda
         if (addon.priceType === 'sqft') {
           const newPrice = baseValue * area
-          updatedAddons.set(id, {
-            ...addon,
-            price: newPrice,
-          })
+          updatedAddons.set(id, { ...addon, price: newPrice })
           hasChanges = true
         } else if (addon.priceType === 'percent' && pricePerSqft > 0) {
-          // Percent calcula: area * pricePerSqft * (percentValue / 100)
           const newPrice = (area * pricePerSqft * baseValue) / 100
-          updatedAddons.set(id, {
-            ...addon,
-            price: newPrice,
-          })
+          updatedAddons.set(id, { ...addon, price: newPrice })
           hasChanges = true
         }
       })
@@ -395,17 +313,14 @@ export function SubcategoryAddonsPopup({
     const newSelected = new Map(selectedAddons)
     
     if (checked) {
-      // Calculate initial price based on type - sempre usa valor máximo do range
       let initialPrice = getMaxPrice(addon)
       let quantity = 1
       
       if (addon.priceType === 'sqft' && area > 0) {
         initialPrice = initialPrice * area
       } else if (addon.priceType === 'percent' && area > 0 && pricePerSqft > 0) {
-        // Percent calcula: area * pricePerSqft * (percentValue / 100)
         initialPrice = (area * pricePerSqft * initialPrice) / 100
       } else if (addon.priceType === 'unit' || addon.priceType === 'ft' || addon.priceType === 'step') {
-        // Para unit, ft, step - começa com quantidade 1 e multiplica
         quantity = 1
         initialPrice = initialPrice * quantity
       }
@@ -428,33 +343,17 @@ export function SubcategoryAddonsPopup({
     const addon = newSelected.get(addonId)
     if (addon) {
       if (editMode === 'total') {
-        // Editando o valor total - atualiza apenas o preço
-        newSelected.set(addonId, {
-          ...addon,
-          price,
-          editMode: 'total',
-        })
+        newSelected.set(addonId, { ...addon, price, editMode: 'total' })
       } else {
-        // Editando o valor base (porcentagem ou preço por sqft)
         let newPrice = price
-        
-        // Calcular baseado no tipo
         if (addon.priceType === 'sqft' && area > 0) {
           newPrice = price * area
         } else if (addon.priceType === 'percent' && area > 0 && pricePerSqft > 0) {
           newPrice = (area * pricePerSqft * price) / 100
         }
-        
-        newSelected.set(addonId, {
-          ...addon,
-          price: newPrice,
-          customBasePrice: price,
-          editMode: 'base',
-        })
+        newSelected.set(addonId, { ...addon, price: newPrice, customBasePrice: price, editMode: 'base' })
       }
       setSelectedAddons(newSelected)
-      // Limpar valor do input quando atualizado programaticamente (mas não quando usuário está digitando)
-      // Não limpar aqui para manter reatividade durante digitação
     }
   }
 
@@ -464,13 +363,8 @@ export function SubcategoryAddonsPopup({
     if (addon && (addon.priceType === 'unit' || addon.priceType === 'ft' || addon.priceType === 'step')) {
       const basePricePerUnit = getMaxPrice(addon)
       const newPrice = basePricePerUnit * quantity
-      newSelected.set(addonId, {
-        ...addon,
-        quantity,
-        price: newPrice,
-      })
+      newSelected.set(addonId, { ...addon, quantity, price: newPrice })
       setSelectedAddons(newSelected)
-      // Limpar valor do input quando atualizado programaticamente
       setInputValues((prev) => {
         const newMap = new Map(prev)
         newMap.delete(`quantity-${addonId}`)
@@ -479,81 +373,112 @@ export function SubcategoryAddonsPopup({
     }
   }
 
+  const handleRemoveIncludedMaterial = (materialId: string) => {
+    setIncludedMaterials((prev) => prev.filter((m) => m.id !== materialId))
+  }
+
   const handleRemoveCalculatedMaterial = (materialId: string) => {
     setCalculatedMaterials((prev) => prev.filter((m) => m.id !== materialId))
   }
 
+  const handleRemoveTile = () => {
+    setSelectedTileSizeId(null)
+    setTileAddon(null)
+  }
+
   const handleApply = () => {
-    // Converter addons selecionados para formato Addon
+    // Convert selected addons to Addon format
     const addons: Addon[] = Array.from(selectedAddons.values()).map((addon) => ({
       id: crypto.randomUUID(),
       name: addon.name,
       price: addon.price,
-      addonType: addon.addonType, // Incluir tipo do addon
-      // Preservar metadados para recalcular quando área ou pricePerSqft mudar
+      addonType: addon.addonType,
       priceType: addon.priceType,
       basePrice: addon.customBasePrice !== undefined ? addon.customBasePrice : getMaxPrice(addon),
       quantity: addon.quantity,
     }))
     
-    // Incluir materiais calculados automaticamente se houver tile size selecionado
-    const allAddons = [...addons, ...calculatedMaterials]
+    // Include tile if selected
+    const tileAddons = tileAddon ? [tileAddon] : []
+    
+    // Include included materials (for requiresTileSize subcategories)
+    // Include calculated materials (for non-requiresTileSize subcategories)
+    const allAddons = [...addons, ...tileAddons, ...includedMaterials, ...calculatedMaterials]
     
     onSelect(allAddons)
     setSelectedAddons(new Map())
     setSelectedTileSizeId(null)
+    setTileAddon(null)
+    setIncludedMaterials([])
     setCalculatedMaterials([])
+  }
+
+  const handleSelectTileSize = () => {
+    setCurrentScreen('tile-selector')
+  }
+
+  const handleContinueWithoutTile = () => {
+    setCurrentScreen('main')
+  }
+
+  const handleTileSizeSelected = (tileSizeId: string) => {
+    setSelectedTileSizeId(tileSizeId)
+    setCurrentScreen('main')
+  }
+
+  const handleBackToOverview = () => {
+    setCurrentScreen('overview')
+    setSelectedTileSizeId(null)
+    setTileAddon(null)
   }
 
   if (!subcategory) return null
 
-  // Filtrar base_price, installation e install (quando priceType é sqft) da lista de addons exibidos
-  // Esses são addons especiais que compartilham o estado com price_per_sqft
+  // Filter addons for display (remove base_price, installation, install when they're base prices)
   const displayAddons = subcategory.suggestedAddons.filter((addon) => {
-    // Remover base_price sempre
     if (addon.id === 'base_price') return false
-    // Remover installation ou install quando priceType é sqft (são base prices)
     if ((addon.id === 'installation' || addon.id === 'install') && addon.priceType === 'sqft') return false
-    // Remover addons que são base price por nome quando priceType é sqft
     if (addon.priceType === 'sqft' && (
       addon.name.toLowerCase().includes('base price') ||
       addon.name.toLowerCase().includes('installation') ||
       (addon.name.toLowerCase().includes('install') && addon.name.toLowerCase().includes('tile'))
     )) {
-      // Mas só se não tiver basePrice definido na subcategoria
       return subcategory.basePrice !== undefined
     }
     return true
   })
   
-  // Get base names of calculated materials to filter them out from selectable materials
-  const calculatedMaterialBaseNames = new Set(
-    calculatedMaterials.map(m => {
-      // Extract base name (everything before the first parenthesis)
-      const fullName = m.name || ''
-      return fullName.split('(')[0].trim().toLowerCase()
-    })
-  )
+  // For requiresTileSize subcategories, also filter out materials that are in includedItems
+  const includedItemIds = new Set((subcategory.includedItems || []).map(item => item.id.toLowerCase()))
+  const filteredAddons = subcategory.requiresTileSize
+    ? displayAddons.filter(addon => {
+        const addonNameLower = addon.name.toLowerCase()
+        // Filter out addons that match included items
+        if (includedItemIds.has(addon.id.toLowerCase())) return false
+        if (addonNameLower.includes('thinset') && includedItemIds.has('thinset')) return false
+        if (addonNameLower.includes('grout') && includedItemIds.has('grout')) return false
+        if (addonNameLower.includes('clip') && includedItemIds.has('leveling_clips')) return false
+        if (addonNameLower.includes('spacer') && includedItemIds.has('spacers')) return false
+        if (addonNameLower.includes('silicone') && includedItemIds.has('silicone')) return false
+        if (addonNameLower.includes('waterproof') && (includedItemIds.has('waterproof_membrane') || includedItemIds.has('waterproofing'))) return false
+        if (addonNameLower.includes('cement board') && includedItemIds.has('cement_board')) return false
+        return true
+      })
+    : displayAddons
 
-  // Organizar addons por tipo, excluindo materiais que já foram calculados
+  // Organize addons by type
   const addonsByType = {
-    service: displayAddons.filter((addon) => addon.addonType === 'service'),
-    material: displayAddons.filter((addon) => {
-      if (addon.addonType !== 'material') return false
-      // Check if this material is already calculated
-      const addonBaseName = addon.name.toLowerCase()
-      return !calculatedMaterialBaseNames.has(addonBaseName)
-    }),
-    complexity: displayAddons.filter((addon) => addon.addonType === 'complexity'),
-    general: displayAddons.filter((addon) => addon.addonType === 'general'),
+    service: filteredAddons.filter((addon) => addon.addonType === 'service'),
+    material: filteredAddons.filter((addon) => addon.addonType === 'material'),
+    complexity: filteredAddons.filter((addon) => addon.addonType === 'complexity'),
+    general: filteredAddons.filter((addon) => addon.addonType === 'general'),
   }
   
   const hasSelectedAddons = selectedAddons.size > 0
   const selectedAddonsPrice = Array.from(selectedAddons.values()).reduce((sum, addon) => sum + addon.price, 0)
-  // Materials don't have price, so total is only from selected addons
   const totalPrice = selectedAddonsPrice
-  
-  // Função para renderizar uma seção de addons
+
+  // Render addon section helper
   const renderAddonSection = (title: string, addons: typeof displayAddons, _type: 'service' | 'material' | 'complexity' | 'general') => {
     if (addons.length === 0) return null
     
@@ -565,11 +490,9 @@ export function SubcategoryAddonsPopup({
         {addons.map((addon) => {
           const isSelected = selectedAddons.has(addon.id)
           const selectedAddon = selectedAddons.get(addon.id)
-          
-                // Calculate base value for display - usa valor máximo para cálculos
-                const baseValue = isSelected && selectedAddon?.customBasePrice !== undefined
-                  ? selectedAddon.customBasePrice
-                  : getMaxPrice(addon)
+          const baseValue = isSelected && selectedAddon?.customBasePrice !== undefined
+            ? selectedAddon.customBasePrice
+            : getMaxPrice(addon)
 
           return (
             <div
@@ -584,16 +507,11 @@ export function SubcategoryAddonsPopup({
                 <Checkbox
                   id={addon.id}
                   checked={isSelected}
-                  onCheckedChange={(checked) =>
-                    handleToggleAddon(addon, checked === true)
-                  }
+                  onCheckedChange={(checked) => handleToggleAddon(addon, checked === true)}
                   className="mt-1"
                 />
                 <div className="flex-1 space-y-2">
-                  <Label
-                    htmlFor={addon.id}
-                    className="text-sm font-medium cursor-pointer"
-                  >
+                  <Label htmlFor={addon.id} className="text-sm font-medium cursor-pointer">
                     {addon.name}
                   </Label>
                   <div className="text-xs text-muted-foreground">
@@ -621,15 +539,15 @@ export function SubcategoryAddonsPopup({
                       <>
                         {addon.priceRange.min}%
                         {addon.priceRange.max ? ` - ${addon.priceRange.max}%` : ''} {t('quoteCreation.ofArea')}
-                              {area > 0 && pricePerSqft > 0 && (
-                                <span className="ml-2">
-                                  ({t('quoteCreation.total')}: {formatCurrency(
-                                    (area * pricePerSqft * (isSelected && selectedAddon?.customBasePrice !== undefined
-                                      ? selectedAddon.customBasePrice
-                                      : getMaxPrice(addon))) / 100
-                                  )})
-                                </span>
-                              )}
+                        {area > 0 && pricePerSqft > 0 && (
+                          <span className="ml-2">
+                            ({t('quoteCreation.total')}: {formatCurrency(
+                              (area * pricePerSqft * (isSelected && selectedAddon?.customBasePrice !== undefined
+                                ? selectedAddon.customBasePrice
+                                : getMaxPrice(addon))) / 100
+                            )})
+                          </span>
+                        )}
                       </>
                     ) : (
                       <>
@@ -673,7 +591,6 @@ export function SubcategoryAddonsPopup({
                         </div>
                       )}
                       
-                      {/* Para sqft e percent: permitir editar base ou total */}
                       {(addon.priceType === 'sqft' || addon.priceType === 'percent') && (
                         <div className="flex items-center gap-2 mb-2">
                           <button
@@ -682,10 +599,7 @@ export function SubcategoryAddonsPopup({
                               const newSelected = new Map(selectedAddons)
                               const currentAddon = newSelected.get(addon.id)
                               if (currentAddon) {
-                                newSelected.set(addon.id, {
-                                  ...currentAddon,
-                                  editMode: 'base',
-                                })
+                                newSelected.set(addon.id, { ...currentAddon, editMode: 'base' })
                                 setSelectedAddons(newSelected)
                               }
                             }}
@@ -705,10 +619,7 @@ export function SubcategoryAddonsPopup({
                               const newSelected = new Map(selectedAddons)
                               const currentAddon = newSelected.get(addon.id)
                               if (currentAddon) {
-                                newSelected.set(addon.id, {
-                                  ...currentAddon,
-                                  editMode: 'total',
-                                })
+                                newSelected.set(addon.id, { ...currentAddon, editMode: 'total' })
                                 setSelectedAddons(newSelected)
                               }
                             }}
@@ -832,111 +743,232 @@ export function SubcategoryAddonsPopup({
     )
   }
 
+  // Render the appropriate screen
+  const renderScreen = () => {
+    if (currentScreen === 'overview') {
+      return (
+        <PackageOverviewScreen
+          subcategory={subcategory}
+          onSelectTileSize={handleSelectTileSize}
+          onContinueWithoutTile={handleContinueWithoutTile}
+        />
+      )
+    }
+
+    if (currentScreen === 'tile-selector') {
+      return (
+        <div className="space-y-4">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToOverview}
+            className="mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {t('common.back') || 'Back'}
+          </Button>
+          <TileSizeSelector
+            selectedTileSizeId={selectedTileSizeId}
+            onSelect={handleTileSizeSelected}
+          />
+        </div>
+      )
+    }
+
+    // Main screen
+    return (
+      <div className="space-y-6">
+        {/* Back button for requiresTileSize subcategories */}
+        {subcategory.requiresTileSize && subcategory.includedItems && subcategory.includedItems.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToOverview}
+            className="mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {t('common.back') || 'Back'}
+          </Button>
+        )}
+
+        {/* Tile Selection - show option to select tile anytime */}
+        {subcategory.requiresTileSize && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b pb-2">
+              {t('quoteCreation.tile') || 'Tile'}
+            </h3>
+            {tileAddon ? (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{tileAddon.name}</div>
+                    {tileAddon.quantity && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {t('quoteCreation.quantity')}: {tileAddon.quantity} {tileAddon.unit}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveTile}
+                    className="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
+                    title={t('common.remove') || 'Remove'}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSelectTileSize}
+                className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2 text-gray-600 hover:text-primary"
+              >
+                <Grid3X3 className="w-5 h-5" />
+                <span className="font-medium">{t('quoteCreation.selectTileSize') || 'Select Tile Size'}</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Included Materials (for requiresTileSize subcategories) */}
+        {subcategory.requiresTileSize && includedMaterials.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b pb-2">
+              {t('quoteCreation.includedMaterials') || 'Included Materials'}
+            </h3>
+            <div className="space-y-2">
+              {includedMaterials.map((material) => (
+                <div
+                  key={material.id}
+                  className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{material.name}</div>
+                      <div className="text-xs text-emerald-600 mt-1">
+                        {t('quoteCreation.included') || 'Included in package'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveIncludedMaterial(material.id)}
+                      className="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
+                      title={t('common.remove') || 'Remove'}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Calculated Materials (for non-requiresTileSize subcategories) */}
+        {!subcategory.requiresTileSize && calculatedMaterials.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b pb-2">
+              {t('quoteCreation.calculatedMaterials') || 'Calculated Materials'}
+            </h3>
+            <div className="space-y-2">
+              {calculatedMaterials.map((material) => (
+                <div
+                  key={material.id}
+                  className="p-3 bg-green-50 border border-green-200 rounded-lg"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{material.name}</div>
+                      {material.quantity && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {t('quoteCreation.quantity')}: {material.quantity} {material.unit}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCalculatedMaterial(material.id)}
+                      className="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
+                      title={t('common.remove') || 'Remove'}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add-ons sections */}
+        {filteredAddons.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {t('quoteCreation.noSuggestedAddons')}
+          </div>
+        ) : (
+          <>
+            {renderAddonSection(t('quoteCreation.services') || 'Services', addonsByType.service, 'service')}
+            {renderAddonSection(t('quoteCreation.materials') || 'Materials', addonsByType.material, 'material')}
+            {renderAddonSection(t('quoteCreation.complexity') || 'Complexity', addonsByType.complexity, 'complexity')}
+            {renderAddonSection(t('quoteCreation.general') || 'General', addonsByType.general, 'general')}
+          </>
+        )}
+
+        {hasSelectedAddons && (
+          <div className="p-4 bg-muted rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">{t('quoteCreation.total')}:</span>
+              <span className="font-bold text-lg">{formatCurrency(totalPrice)}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleApply}
+            className="flex-1"
+          >
+            {t('quoteCreation.applyAddons')}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {t('quoteCreation.suggestedAddons')} - {subcategory.name}
+            {currentScreen === 'overview' 
+              ? subcategory.name
+              : currentScreen === 'tile-selector'
+              ? t('quoteCreation.selectTileSize') || 'Select Tile Size'
+              : `${t('quoteCreation.suggestedAddons')} - ${subcategory.name}`}
           </DialogTitle>
-          <DialogDescription>
-            {t('quoteCreation.selectSuggestedAddons')}
-          </DialogDescription>
+          {currentScreen !== 'overview' && (
+            <DialogDescription>
+              {currentScreen === 'tile-selector'
+                ? t('quoteCreation.selectTileSizeDescription') || 'Choose the tile size to calculate tiles needed'
+                : t('quoteCreation.selectSuggestedAddons')}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Mostrar seleção de tile size primeiro se necessário */}
-          {subcategory.requiresTileSize && !selectedTileSizeId && (
-            <TileSizeSelector
-              selectedTileSizeId={selectedTileSizeId}
-              onSelect={setSelectedTileSizeId}
-            />
-          )}
-
-          {/* Mostrar materiais calculados para todos os tipos de subcategorias */}
-          {calculatedMaterials.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b pb-2">
-                {t('quoteCreation.calculatedMaterials') || 'Calculated Materials'}
-              </h3>
-              <div className="space-y-2">
-                {calculatedMaterials.map((material) => (
-                  <div
-                    key={material.id}
-                    className="p-3 bg-green-50 border border-green-200 rounded-lg"
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{material.name}</div>
-                        {material.quantity && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {t('quoteCreation.quantity')}: {material.quantity} {material.unit}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCalculatedMaterial(material.id)}
-                        className="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
-                        title={t('common.remove') || 'Remove'}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Mostrar addons apenas se tile size estiver selecionado (quando necessário) ou se não requer tile size */}
-          {(!subcategory.requiresTileSize || selectedTileSizeId) && (
-            <>
-              {displayAddons.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('quoteCreation.noSuggestedAddons')}
-                </div>
-              ) : (
-                <>
-                  {renderAddonSection(t('quoteCreation.services') || 'Services', addonsByType.service, 'service')}
-                  {renderAddonSection(t('quoteCreation.materials') || 'Materials', addonsByType.material, 'material')}
-                  {renderAddonSection(t('quoteCreation.complexity') || 'Complexity', addonsByType.complexity, 'complexity')}
-                  {renderAddonSection(t('quoteCreation.general') || 'General', addonsByType.general, 'general')}
-                </>
-              )}
-            </>
-          )}
-
-          {hasSelectedAddons && (
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{t('quoteCreation.total')}:</span>
-                <span className="font-bold text-lg">{formatCurrency(totalPrice)}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className="flex-1"
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleApply}
-              disabled={!hasSelectedAddons && calculatedMaterials.length === 0 && (!subcategory.requiresTileSize || !selectedTileSizeId)}
-              className="flex-1"
-            >
-              {t('quoteCreation.applyAddons')}
-            </Button>
-          </div>
-        </div>
+        {renderScreen()}
       </DialogContent>
     </Dialog>
   )
 }
-

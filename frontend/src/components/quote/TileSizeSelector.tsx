@@ -67,7 +67,7 @@ export function TileSizeSelector({ selectedTileSizeId, onSelect }: TileSizeSelec
           {t('quoteCreation.selectTileSize') || 'Select Tile Size'}
         </Label>
         <p className="text-sm text-muted-foreground mt-1">
-          {t('quoteCreation.selectTileSizeDescription') || 'Choose the tile size to calculate materials automatically'}
+          {t('quoteCreation.selectTileSizeDescriptionTileOnly') || 'Choose the tile size to calculate how many tiles are needed'}
         </p>
       </div>
 

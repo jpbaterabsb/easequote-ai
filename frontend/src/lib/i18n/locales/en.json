@@ -441,7 +441,17 @@
     "addAnother": "Add Another",
     "categoryChangeWarning": "Warning: Category Change",
     "categoryChangeWarningDescription": "By changing the category, you will lose all add-ons and data already added from the previous category. The platform's mode of operation is that an item should have only one category. If you want to keep both categories, add another item with the desired category.",
-    "subcategoryChangeWarning": "By changing the subcategory, you will lose all add-ons already added from the previous subcategory. The platform's mode of operation is that an item should have only one category/subcategory. If you want to keep both, add another item with the desired subcategory."
+    "subcategoryChangeWarning": "By changing the subcategory, you will lose all add-ons already added from the previous subcategory. The platform's mode of operation is that an item should have only one category/subcategory. If you want to keep both, add another item with the desired subcategory.",
+    "packageOverview": "Package Overview",
+    "packageOverviewDescription": "Here's what's included in this package",
+    "includedServices": "Included Services",
+    "includedMaterials": "Included Materials",
+    "tileNote": "Note",
+    "tileNoteDescription": "Tile is not included in this package. You can select a tile size to add it to the quote, or continue without tile and add it later.",
+    "continueWithoutTile": "Continue Without Tile",
+    "selectTileSizeDescriptionTileOnly": "Choose the tile size to calculate how many tiles are needed",
+    "tile": "Tile",
+    "included": "Included in package"
   },
   "errors": {
     "somethingWentWrong": "Something went wrong",

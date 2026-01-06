@@ -12,6 +12,12 @@ export interface SuggestedAddon {
   addonType: AddonType // Tipo do addon: material, service, complexity, ou general
 }
 
+export interface IncludedItem {
+  id: string
+  name: string
+  type: 'service' | 'material'
+}
+
 export interface Subcategory {
   id: string
   name: string
@@ -19,6 +25,7 @@ export interface Subcategory {
   requiresTileSize?: boolean // Se true, requer seleção de tamanho de tile antes de mostrar addons
   basePrice?: number // Preço base/instalação que compartilha o estado com price_per_sqft
   basePriceName?: string // Nome do base price (ex: "Base price", "Installation", "Install")
+  includedItems?: IncludedItem[] // Items included in the package (for overview display)
 }
 
 export interface Category {
@@ -240,6 +247,13 @@ export const categories: Category[] = [
         requiresTileSize: true,
         basePrice: 4.5,
         basePriceName: 'Base price',
+        includedItems: [
+          { id: 'tile_install', name: 'Tile Installation', type: 'service' },
+          { id: 'thinset', name: 'Thinset', type: 'material' },
+          { id: 'grout', name: 'Grout', type: 'material' },
+          { id: 'leveling_clips', name: 'Leveling Clips', type: 'material' },
+          { id: 'spacers', name: 'Spacers', type: 'material' },
+        ],
         suggestedAddons: [
           {
             id: 'base_price',
@@ -403,6 +417,18 @@ export const categories: Category[] = [
         requiresTileSize: true,
         basePrice: 50,
         basePriceName: 'Full shower install',
+        includedItems: [
+          { id: 'full_install', name: 'Full Shower Install', type: 'service' },
+          { id: 'demo', name: 'Demo', type: 'service' },
+          { id: 'waterproofing', name: 'Waterproofing', type: 'service' },
+          { id: 'cement_board', name: 'Cement Board', type: 'material' },
+          { id: 'waterproof_membrane', name: 'Waterproof Membrane', type: 'material' },
+          { id: 'thinset', name: 'Thinset', type: 'material' },
+          { id: 'grout', name: 'Grout', type: 'material' },
+          { id: 'leveling_clips', name: 'Leveling Clips', type: 'material' },
+          { id: 'spacers', name: 'Spacers', type: 'material' },
+          { id: 'silicone', name: 'Silicone', type: 'material' },
+        ],
         suggestedAddons: [
           {
             id: 'full_shower_install',
@@ -454,6 +480,16 @@ export const categories: Category[] = [
         requiresTileSize: true,
         basePrice: 10,
         basePriceName: 'Base price',
+        includedItems: [
+          { id: 'wall_install', name: 'Wall Tile Installation', type: 'service' },
+          { id: 'waterproofing', name: 'Waterproofing', type: 'service' },
+          { id: 'cement_board', name: 'Cement Board', type: 'material' },
+          { id: 'waterproof_membrane', name: 'Waterproof Membrane', type: 'material' },
+          { id: 'thinset', name: 'Thinset', type: 'material' },
+          { id: 'grout', name: 'Grout', type: 'material' },
+          { id: 'leveling_clips', name: 'Leveling Clips', type: 'material' },
+          { id: 'silicone', name: 'Silicone', type: 'material' },
+        ],
         suggestedAddons: [
           {
             id: 'base_price',
@@ -492,6 +528,15 @@ export const categories: Category[] = [
         requiresTileSize: true,
         basePrice: 15,
         basePriceName: 'Base price',
+        includedItems: [
+          { id: 'floor_install', name: 'Floor Tile Installation', type: 'service' },
+          { id: 'waterproofing', name: 'Waterproofing', type: 'service' },
+          { id: 'pan_prep', name: 'Pan Preparation', type: 'service' },
+          { id: 'waterproof_membrane', name: 'Waterproof Membrane', type: 'material' },
+          { id: 'thinset', name: 'Thinset', type: 'material' },
+          { id: 'grout', name: 'Grout', type: 'material' },
+          { id: 'silicone', name: 'Silicone', type: 'material' },
+        ],
         suggestedAddons: [
           {
             id: 'base_price',
@@ -530,6 +575,13 @@ export const categories: Category[] = [
         requiresTileSize: true,
         basePrice: 5.25,
         basePriceName: 'Tile install',
+        includedItems: [
+          { id: 'tile_install', name: 'Tile Installation', type: 'service' },
+          { id: 'thinset', name: 'Thinset', type: 'material' },
+          { id: 'grout', name: 'Grout', type: 'material' },
+          { id: 'leveling_clips', name: 'Leveling Clips', type: 'material' },
+          { id: 'spacers', name: 'Spacers', type: 'material' },
+        ],
         suggestedAddons: [
           {
             id: 'tile_install',
@@ -574,6 +626,16 @@ export const categories: Category[] = [
         requiresTileSize: true,
         basePrice: 8.5,
         basePriceName: 'Tile surround',
+        includedItems: [
+          { id: 'tile_install', name: 'Tile Installation', type: 'service' },
+          { id: 'waterproofing', name: 'Waterproofing', type: 'service' },
+          { id: 'cement_board', name: 'Cement Board', type: 'material' },
+          { id: 'waterproof_membrane', name: 'Waterproof Membrane', type: 'material' },
+          { id: 'thinset', name: 'Thinset', type: 'material' },
+          { id: 'grout', name: 'Grout', type: 'material' },
+          { id: 'leveling_clips', name: 'Leveling Clips', type: 'material' },
+          { id: 'silicone', name: 'Silicone', type: 'material' },
+        ],
         suggestedAddons: [
           {
             id: 'tile_surround',
@@ -696,6 +758,12 @@ export const categories: Category[] = [
         requiresTileSize: true,
         basePrice: 16,
         basePriceName: 'Install',
+        includedItems: [
+          { id: 'tile_install', name: 'Tile Installation', type: 'service' },
+          { id: 'thinset', name: 'Thinset', type: 'material' },
+          { id: 'grout', name: 'Grout', type: 'material' },
+          { id: 'silicone', name: 'Silicone', type: 'material' },
+        ],
         suggestedAddons: [
           {
             id: 'install',

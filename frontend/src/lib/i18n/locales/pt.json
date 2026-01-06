@@ -441,7 +441,17 @@
     "addAnother": "Adicionar Outro",
     "categoryChangeWarning": "Atenção: Mudança de Categoria",
     "categoryChangeWarningDescription": "Ao mudar de categoria, você perderá todos os complementos e dados já adicionados da categoria anterior. O modo de operação da plataforma é que um item deve ter apenas uma categoria. Se você deseja manter ambas as categorias, adicione mais um item com a categoria desejada.",
-    "subcategoryChangeWarning": "Ao mudar de subcategoria, você perderá todos os complementos já adicionados da subcategoria anterior. O modo de operação da plataforma é que um item deve ter apenas uma categoria/subcategoria. Se você deseja manter ambas, adicione mais um item com a subcategoria desejada."
+    "subcategoryChangeWarning": "Ao mudar de subcategoria, você perderá todos os complementos já adicionados da subcategoria anterior. O modo de operação da plataforma é que um item deve ter apenas uma categoria/subcategoria. Se você deseja manter ambas, adicione mais um item com a subcategoria desejada.",
+    "packageOverview": "Visão Geral do Pacote",
+    "packageOverviewDescription": "Isso é o que está incluído neste pacote",
+    "includedServices": "Serviços Incluídos",
+    "includedMaterials": "Materiais Incluídos",
+    "tileNote": "Nota",
+    "tileNoteDescription": "O tile não está incluído neste pacote. Você pode selecionar um tamanho de tile para adicioná-lo à cotação, ou continuar sem tile e adicioná-lo depois.",
+    "continueWithoutTile": "Continuar Sem Tile",
+    "selectTileSizeDescriptionTileOnly": "Escolha o tamanho do tile para calcular quantos tiles são necessários",
+    "tile": "Tile",
+    "included": "Incluído no pacote"
   },
   "errors": {
     "somethingWentWrong": "Algo deu errado",
