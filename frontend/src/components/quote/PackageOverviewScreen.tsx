@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Package, Wrench, Box, ChevronRight } from 'lucide-react'
-import type { IncludedItem, Subcategory } from '@/data/categories'
+import type { Subcategory } from '@/data/categories'
 import { useTranslation } from '@/hooks/useTranslation'
 
 interface PackageOverviewScreenProps {

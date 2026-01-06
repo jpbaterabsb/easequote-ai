@@ -19,8 +19,6 @@ import { TileSizeSelector } from './TileSizeSelector'
 import { PackageOverviewScreen } from './PackageOverviewScreen'
 import {
   findTileSizeById,
-  calculateClipsNeeded,
-  calculateSpacersNeeded,
   calculateTilePiecesNeeded,
   calculateFlooringBoxesNeeded,
   materialCoverage,
